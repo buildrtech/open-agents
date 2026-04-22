@@ -10,4 +10,5 @@ export type {
   RefreshBaseSnapshotCommandResult,
   RefreshBaseSnapshotOptions,
   RefreshBaseSnapshotResult,
+  RefreshBaseSnapshotStagedFile,
 } from "./snapshot-refresh";

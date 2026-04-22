@@ -5,6 +5,7 @@ export const DEFAULT_BASE_SNAPSHOT_COMMAND_TIMEOUT_MS = 10 * 60 * 1000;
 
 interface SnapshotSandbox {
   workingDirectory: string;
+  writeFile(path: string, content: string, encoding: "utf-8"): Promise<void>;
   exec(command: string, cwd: string, timeoutMs: number): Promise<ExecResult>;
   stop(): Promise<void>;
   snapshot?(): Promise<SnapshotResult>;
@@ -14,8 +15,14 @@ type SnapshotSandboxConnector = (
   config: SandboxConnectConfig,
 ) => Promise<SnapshotSandbox>;
 
+export interface RefreshBaseSnapshotStagedFile {
+  path: string;
+  content: string;
+}
+
 export interface RefreshBaseSnapshotOptions {
   baseSnapshotId: string;
+  stagedFiles?: RefreshBaseSnapshotStagedFile[];
   commands?: string[];
   sandboxTimeoutMs: number;
   commandTimeoutMs?: number;
@@ -107,6 +114,11 @@ export async function refreshBaseSnapshot(
     }
 
     const commandResults: RefreshBaseSnapshotCommandResult[] = [];
+
+    for (const stagedFile of options.stagedFiles ?? []) {
+      log(`Uploading staged file ${stagedFile.path}.`);
+      await sandbox.writeFile(stagedFile.path, stagedFile.content, "utf-8");
+    }
 
     for (const [index, command] of commands.entries()) {
       log(`Running command ${index + 1}/${commands.length}: ${command}`);

@@ -8,6 +8,11 @@ import {
 
 interface MockSnapshotSandbox {
   workingDirectory: string;
+  writeFile: (
+    path: string,
+    content: string,
+    encoding: "utf-8",
+  ) => Promise<void>;
   exec: (
     command: string,
     cwd: string,
@@ -33,6 +38,7 @@ function createSandbox(
 ): MockSnapshotSandbox {
   return {
     workingDirectory: "/vercel/sandbox",
+    writeFile: async () => {},
     exec: async () => createExecResult(),
     stop: async () => {},
     snapshot: async () => ({ snapshotId: "snap-next" }),
@@ -129,6 +135,74 @@ describe("refreshBaseSnapshot", () => {
       "Creating snapshot from prepared sandbox.",
       "Created snapshot snap-next.",
     ]);
+  });
+
+  test("writes staged files before running setup commands", async () => {
+    const writes: Array<{
+      path: string;
+      content: string;
+      encoding: "utf-8";
+    }> = [];
+    const execCalls: string[] = [];
+
+    await refreshBaseSnapshot(
+      {
+        baseSnapshotId: "snap-current",
+        sandboxTimeoutMs: 300_000,
+        stagedFiles: [
+          {
+            path: "/tmp/buildr/Gemfile",
+            content: "source 'https://rubygems.org'\n",
+          },
+        ],
+        commands: ["test -f /tmp/buildr/Gemfile"],
+      },
+      {
+        connectSandbox: async () =>
+          createSandbox({
+            writeFile: async (path, content, encoding) => {
+              writes.push({ path, content, encoding });
+            },
+            exec: async (command) => {
+              execCalls.push(command);
+              return createExecResult();
+            },
+          }),
+      },
+    );
+
+    expect(writes).toEqual([
+      {
+        path: "/tmp/buildr/Gemfile",
+        content: "source 'https://rubygems.org'\n",
+        encoding: "utf-8",
+      },
+    ]);
+    expect(execCalls).toEqual(["test -f /tmp/buildr/Gemfile"]);
+  });
+
+  test("stops the sandbox when staged file upload fails", async () => {
+    const stop = mock(async () => {});
+
+    const refreshPromise = refreshBaseSnapshot(
+      {
+        baseSnapshotId: "snap-current",
+        sandboxTimeoutMs: 300_000,
+        stagedFiles: [{ path: "/tmp/buildr/.npmrc", content: "token" }],
+      },
+      {
+        connectSandbox: async () =>
+          createSandbox({
+            stop,
+            writeFile: async () => {
+              throw new Error("write failed");
+            },
+          }),
+      },
+    );
+
+    await expect(refreshPromise).rejects.toThrow("write failed");
+    expect(stop).toHaveBeenCalledTimes(1);
   });
 
   test("stops the sandbox and surfaces command output when setup fails", async () => {
