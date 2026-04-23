@@ -19,6 +19,7 @@ import {
   isRestrictedModelIdForSession,
   MANAGED_TEMPLATE_TRIAL_MODEL_ACCESS_ERROR,
 } from "@/lib/model-access";
+import { isModelAllowed } from "@/lib/model-availability";
 import { getServerSession } from "@/lib/session/get-server-session";
 
 const PROVIDER_OPTIONS_MAX_BYTES = 16 * 1024;
@@ -74,6 +75,10 @@ export async function POST(req: Request) {
   const parsedBody = createModelVariantInputSchema.safeParse(body);
   if (!parsedBody.success) {
     return jsonError("Invalid model variant payload", 400);
+  }
+
+  if (!isModelAllowed(parsedBody.data.baseModelId)) {
+    return jsonError("Invalid baseModelId", 400);
   }
 
   if (
@@ -161,6 +166,10 @@ export async function PATCH(req: Request) {
       ...existingVariant,
       ...parsedBody.data,
     });
+
+    if (!isModelAllowed(updatedVariant.baseModelId)) {
+      return jsonError("Invalid baseModelId", 400);
+    }
 
     if (isProviderOptionsTooLarge(updatedVariant.providerOptions)) {
       return jsonError("Provider options must be 16 KB or smaller", 400);

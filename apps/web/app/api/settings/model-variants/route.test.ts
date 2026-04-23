@@ -32,7 +32,7 @@ let preferences: MockPreferences;
 
 function resetPreferences() {
   preferences = {
-    defaultModelId: "anthropic/claude-haiku-4.5",
+    defaultModelId: "openai/gpt-5.4",
     defaultSubagentModelId: null,
     defaultSandboxType: "vercel",
     defaultDiffMode: "unified",
@@ -127,6 +127,34 @@ describe("/api/settings/model-variants", () => {
     ]);
   });
 
+  test("GET hides variants backed by company-disallowed base models", async () => {
+    preferences.modelVariants = [
+      {
+        id: "variant:user-kimi",
+        name: "User Kimi",
+        baseModelId: "moonshotai/kimi-k2.6",
+        providerOptions: {},
+      },
+      {
+        id: "variant:user-blocked",
+        name: "User Blocked",
+        baseModelId: "anthropic/claude-haiku-4.5",
+        providerOptions: {},
+      },
+    ];
+
+    const { GET } = await routeModulePromise;
+    const response = await GET(
+      new Request("http://localhost/api/settings/model-variants"),
+    );
+    const body = (await response.json()) as { modelVariants: ModelVariant[] };
+
+    expect(body.modelVariants.map((variant) => variant.id)).toEqual([
+      "variant:builtin:gpt-5.4-xhigh",
+      "variant:user-kimi",
+    ]);
+  });
+
   test("POST rejects invalid JSON body", async () => {
     const { POST } = await routeModulePromise;
 
@@ -150,7 +178,7 @@ describe("/api/settings/model-variants", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: "OpenAI Medium",
-          baseModelId: "openai/gpt-5",
+          baseModelId: "openai/gpt-5.4",
           providerOptions: {
             reasoningEffort: "medium",
           },
@@ -161,12 +189,32 @@ describe("/api/settings/model-variants", () => {
     expect(response.ok).toBe(true);
 
     const body = (await response.json()) as { modelVariants: ModelVariant[] };
-    expect(body.modelVariants).toHaveLength(3);
-    expect(body.modelVariants[2]?.id.startsWith("variant:")).toBe(true);
-    expect(body.modelVariants[2]?.name).toBe("OpenAI Medium");
+    expect(body.modelVariants).toHaveLength(2);
+    expect(body.modelVariants[1]?.id.startsWith("variant:")).toBe(true);
+    expect(body.modelVariants[1]?.name).toBe("OpenAI Medium");
   });
 
-  test("POST rejects Opus-backed variants for managed trial users", async () => {
+  test("POST rejects base models outside the company allowlist", async () => {
+    const { POST } = await routeModulePromise;
+
+    const response = await POST(
+      new Request("http://localhost/api/settings/model-variants", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "Blocked model",
+          baseModelId: "openai/gpt-5",
+          providerOptions: {},
+        }),
+      }),
+    );
+    const body = (await response.json()) as { error: string };
+
+    expect(response.status).toBe(400);
+    expect(body.error).toBe("Invalid baseModelId");
+  });
+
+  test("POST rejects company-disallowed base models before managed trial checks", async () => {
     currentSession = {
       authProvider: "vercel",
       user: {
@@ -189,7 +237,10 @@ describe("/api/settings/model-variants", () => {
       }),
     );
 
-    expect(response.status).toBe(403);
+    const body = (await response.json()) as { error: string };
+
+    expect(response.status).toBe(400);
+    expect(body.error).toBe("Invalid baseModelId");
   });
 
   test("POST accepts provider options exactly at 16KB", async () => {
@@ -205,7 +256,7 @@ describe("/api/settings/model-variants", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: "Exact 16KB",
-          baseModelId: "openai/gpt-5",
+          baseModelId: "openai/gpt-5.4",
           providerOptions: exactProviderOptions,
         }),
       }),
@@ -223,7 +274,7 @@ describe("/api/settings/model-variants", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: "Too big",
-          baseModelId: "openai/gpt-5",
+          baseModelId: "openai/gpt-5.4",
           providerOptions: {
             payload: "x".repeat(17_000),
           },
@@ -242,7 +293,7 @@ describe("/api/settings/model-variants", () => {
       {
         id: "variant:openai-medium",
         name: "OpenAI Medium",
-        baseModelId: "openai/gpt-5",
+        baseModelId: "openai/gpt-5.4",
         providerOptions: { reasoningEffort: "medium" },
       },
     ];
@@ -298,7 +349,7 @@ describe("/api/settings/model-variants", () => {
       {
         id: "variant:openai-medium",
         name: "OpenAI Medium",
-        baseModelId: "openai/gpt-5",
+        baseModelId: "openai/gpt-5.4",
         providerOptions: { reasoningEffort: "medium" },
       },
     ];
@@ -318,9 +369,36 @@ describe("/api/settings/model-variants", () => {
     expect(response.ok).toBe(true);
 
     const body = (await response.json()) as { modelVariants: ModelVariant[] };
-    expect(body.modelVariants[2]?.providerOptions).toEqual({
+    expect(body.modelVariants[1]?.providerOptions).toEqual({
       reasoningEffort: "high",
     });
+  });
+
+  test("PATCH rejects base model changes outside the company allowlist", async () => {
+    preferences.modelVariants = [
+      {
+        id: "variant:openai-medium",
+        name: "OpenAI Medium",
+        baseModelId: "openai/gpt-5.4",
+        providerOptions: { reasoningEffort: "medium" },
+      },
+    ];
+
+    const { PATCH } = await routeModulePromise;
+    const response = await PATCH(
+      new Request("http://localhost/api/settings/model-variants", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: "variant:openai-medium",
+          baseModelId: "anthropic/claude-haiku-4.5",
+        }),
+      }),
+    );
+    const body = (await response.json()) as { error: string };
+
+    expect(response.status).toBe(400);
+    expect(body.error).toBe("Invalid baseModelId");
   });
 
   test("PATCH rejects provider options larger than 16KB", async () => {
@@ -328,7 +406,7 @@ describe("/api/settings/model-variants", () => {
       {
         id: "variant:openai-medium",
         name: "OpenAI Medium",
-        baseModelId: "openai/gpt-5",
+        baseModelId: "openai/gpt-5.4",
         providerOptions: { reasoningEffort: "medium" },
       },
     ];
@@ -383,7 +461,7 @@ describe("/api/settings/model-variants", () => {
       {
         id: "variant:remove-me",
         name: "To remove",
-        baseModelId: "anthropic/claude-haiku-4.5",
+        baseModelId: "moonshotai/kimi-k2.6",
         providerOptions: {},
       },
     ];
@@ -400,6 +478,6 @@ describe("/api/settings/model-variants", () => {
     expect(response.ok).toBe(true);
 
     const body = (await response.json()) as { modelVariants: ModelVariant[] };
-    expect(body.modelVariants).toHaveLength(2);
+    expect(body.modelVariants).toHaveLength(1);
   });
 });
