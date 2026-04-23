@@ -1,21 +1,63 @@
 import { APP_DEFAULT_MODEL_ID } from "@/lib/models";
 
-const DISABLED_MODEL_IDS = new Set(["openai/gpt-5.4-pro"]);
+export const ALLOWED_PROVIDER_IDS = new Set(["openai", "fireworks"]);
 
-export function isModelDisabled(modelId: string): boolean {
-  return DISABLED_MODEL_IDS.has(modelId);
+export const ALLOWED_MODEL_IDS = new Set([
+  APP_DEFAULT_MODEL_ID,
+  "moonshotai/kimi-k2.6",
+]);
+
+export type ProviderOptionsByProvider = Record<
+  string,
+  Record<string, unknown>
+>;
+
+export function assertDefaultModelIsAllowed(): void {
+  if (!ALLOWED_MODEL_IDS.has(APP_DEFAULT_MODEL_ID)) {
+    throw new Error(
+      `APP_DEFAULT_MODEL_ID must be allowlisted: ${APP_DEFAULT_MODEL_ID}`,
+    );
+  }
 }
 
-export function filterDisabledModels<T extends { id: string }>(
-  models: T[],
+export function isModelAllowed(modelId: string): boolean {
+  return ALLOWED_MODEL_IDS.has(modelId);
+}
+
+export function filterAllowedModels<T extends { id: string }>(models: T[]): T[] {
+  return models.filter((model) => isModelAllowed(model.id));
+}
+
+export function filterAllowedModelVariants<T extends { baseModelId: string }>(
+  variants: T[],
 ): T[] {
-  return models.filter((model) => !isModelDisabled(model.id));
+  return variants.filter((variant) => isModelAllowed(variant.baseModelId));
+}
+
+export function getRequiredProviderOptionsForModel(
+  modelId: string,
+): ProviderOptionsByProvider | undefined {
+  if (modelId === "openai/gpt-5.4") {
+    return {
+      gateway: {
+        only: ["openai"],
+        order: ["openai"],
+      },
+    };
+  }
+
+  if (modelId === "moonshotai/kimi-k2.6") {
+    return {
+      gateway: {
+        only: ["fireworks"],
+        order: ["fireworks"],
+      },
+    };
+  }
+
+  return undefined;
 }
 
 export function resolveAvailableModelId(modelId: string): string {
-  if (isModelDisabled(modelId)) {
-    return APP_DEFAULT_MODEL_ID;
-  }
-
-  return modelId;
+  return isModelAllowed(modelId) ? modelId : APP_DEFAULT_MODEL_ID;
 }
