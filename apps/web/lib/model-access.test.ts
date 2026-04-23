@@ -8,16 +8,6 @@ import {
   sanitizeUserPreferencesForSession,
 } from "./model-access";
 
-const managedTrialSession = {
-  authProvider: "vercel" as const,
-  user: {
-    id: "user-1",
-    username: "alice",
-    email: "alice@example.com",
-    avatar: "",
-  },
-};
-
 const vercelSession = {
   authProvider: "vercel" as const,
   user: {
@@ -78,10 +68,7 @@ describe("model access gating", () => {
 
   test("filters variants whose base model is not allowlisted", () => {
     const result = filterModelVariantsForSession(
-      [
-        userKimiVariant,
-        userOpusVariant,
-      ],
+      [userKimiVariant, userOpusVariant],
       vercelSession,
       requestUrl,
     );

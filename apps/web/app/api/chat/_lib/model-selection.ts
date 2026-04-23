@@ -60,6 +60,8 @@ export function resolveChatModelSelection({
 
   return createAgentModelSelection(
     availableModelId,
-    selection.providerOptionsByProvider as ProviderOptionsByProvider | undefined,
+    selection.providerOptionsByProvider as
+      | ProviderOptionsByProvider
+      | undefined,
   );
 }

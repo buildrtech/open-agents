@@ -51,10 +51,7 @@ describe("model availability", () => {
         { id: "moonshotai/kimi-k2.6" },
         { id: "anthropic/claude-sonnet-4.6" },
       ]),
-    ).toEqual([
-      { id: "openai/gpt-5.4" },
-      { id: "moonshotai/kimi-k2.6" },
-    ]);
+    ).toEqual([{ id: "openai/gpt-5.4" }, { id: "moonshotai/kimi-k2.6" }]);
 
     expect(filterAllowedModelVariants(variants)).toEqual([
       {

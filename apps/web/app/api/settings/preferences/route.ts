@@ -147,11 +147,16 @@ export async function PATCH(req: Request) {
   }
 
   const currentPreferences = await getUserPreferences(session.user.id);
-  const availableModelVariants = getAllVariants(currentPreferences.modelVariants);
+  const availableModelVariants = getAllVariants(
+    currentPreferences.modelVariants,
+  );
 
   if (body.defaultModelId !== undefined) {
     if (typeof body.defaultModelId !== "string") {
-      return Response.json({ error: "Invalid defaultModelId" }, { status: 400 });
+      return Response.json(
+        { error: "Invalid defaultModelId" },
+        { status: 400 },
+      );
     }
 
     const sanitizedDefaultModelId = sanitizeSelectedModelIdForSession(
@@ -161,7 +166,10 @@ export async function PATCH(req: Request) {
       req.url,
     );
     if (sanitizedDefaultModelId !== body.defaultModelId) {
-      return Response.json({ error: "Invalid defaultModelId" }, { status: 400 });
+      return Response.json(
+        { error: "Invalid defaultModelId" },
+        { status: 400 },
+      );
     }
   }
 

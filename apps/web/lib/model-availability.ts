@@ -20,7 +20,9 @@ export function isModelAllowed(modelId: string): boolean {
   return ALLOWED_MODEL_IDS.has(modelId);
 }
 
-export function filterAllowedModels<T extends { id: string }>(models: T[]): T[] {
+export function filterAllowedModels<T extends { id: string }>(
+  models: T[],
+): T[] {
   return models.filter((model) => isModelAllowed(model.id));
 }
 
