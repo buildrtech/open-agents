@@ -4,7 +4,11 @@ import {
   type DiffMode,
   updateUserPreferences,
 } from "@/lib/db/user-preferences";
-import { sanitizeUserPreferencesForSession } from "@/lib/model-access";
+import {
+  sanitizeSelectedModelIdForSession,
+  sanitizeUserPreferencesForSession,
+} from "@/lib/model-access";
+import { getAllVariants } from "@/lib/model-variants";
 import type { SandboxType } from "@/components/sandbox-selector-compact";
 import {
   globalSkillRefsSchema,
@@ -22,7 +26,6 @@ interface UpdatePreferencesRequest {
   alertSoundEnabled?: boolean;
   publicUsageEnabled?: boolean;
   globalSkillRefs?: GlobalSkillRef[];
-  enabledModelIds?: string[];
 }
 
 export async function GET(req: Request) {
@@ -136,15 +139,56 @@ export async function PATCH(req: Request) {
     body.globalSkillRefs = parsedGlobalSkillRefs.data;
   }
 
-  if (body.enabledModelIds !== undefined) {
+  if ("enabledModelIds" in body) {
+    return Response.json(
+      { error: "enabledModelIds is no longer supported" },
+      { status: 400 },
+    );
+  }
+
+  const currentPreferences = await getUserPreferences(session.user.id);
+  const availableModelVariants = getAllVariants(currentPreferences.modelVariants);
+
+  if (body.defaultModelId !== undefined) {
+    if (typeof body.defaultModelId !== "string") {
+      return Response.json({ error: "Invalid defaultModelId" }, { status: 400 });
+    }
+
+    const sanitizedDefaultModelId = sanitizeSelectedModelIdForSession(
+      body.defaultModelId,
+      availableModelVariants,
+      session,
+      req.url,
+    );
+    if (sanitizedDefaultModelId !== body.defaultModelId) {
+      return Response.json({ error: "Invalid defaultModelId" }, { status: 400 });
+    }
+  }
+
+  if (body.defaultSubagentModelId !== undefined) {
     if (
-      !Array.isArray(body.enabledModelIds) ||
-      !body.enabledModelIds.every((id) => typeof id === "string")
+      body.defaultSubagentModelId !== null &&
+      typeof body.defaultSubagentModelId !== "string"
     ) {
       return Response.json(
-        { error: "Invalid enabledModelIds value" },
+        { error: "Invalid defaultSubagentModelId" },
         { status: 400 },
       );
+    }
+
+    if (body.defaultSubagentModelId) {
+      const sanitizedDefaultSubagentModelId = sanitizeSelectedModelIdForSession(
+        body.defaultSubagentModelId,
+        availableModelVariants,
+        session,
+        req.url,
+      );
+      if (sanitizedDefaultSubagentModelId !== body.defaultSubagentModelId) {
+        return Response.json(
+          { error: "Invalid defaultSubagentModelId" },
+          { status: 400 },
+        );
+      }
     }
   }
 

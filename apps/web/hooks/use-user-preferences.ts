@@ -20,7 +20,6 @@ export interface UserPreferences {
   publicUsageEnabled: boolean;
   globalSkillRefs: GlobalSkillRef[];
   modelVariants: ModelVariant[];
-  enabledModelIds: string[];
 }
 
 interface PreferencesResponse {

@@ -20,7 +20,6 @@ import type { FileSuggestion } from "@/app/api/sessions/[sessionId]/files/route"
 import type { SkillSuggestion } from "@/app/api/sessions/[sessionId]/skills/route";
 import type { WebAgentUIMessage } from "@/app/types";
 import { useModelOptions } from "@/hooks/use-model-options";
-import { useUserPreferences } from "@/hooks/use-user-preferences";
 import { useSessionDiff } from "@/hooks/use-session-diff";
 import { useSessionFiles } from "@/hooks/use-session-files";
 import {
@@ -309,20 +308,9 @@ export function SessionChatProvider({
     useModelOptions({
       initialModelOptions,
     });
-  const { preferences: userPrefs } = useUserPreferences();
-  const enabledModelIds = userPrefs?.enabledModelIds;
-  const baseModelOptions = useMemo(() => {
-    if (!enabledModelIds || enabledModelIds.length === 0) {
-      return allModelOptions;
-    }
-    const enabledSet = new Set(enabledModelIds);
-    return allModelOptions.filter(
-      (option) => enabledSet.has(option.id) || option.id === chatInfo.modelId,
-    );
-  }, [allModelOptions, enabledModelIds, chatInfo.modelId]);
   const modelOptions = useMemo(
-    () => withMissingModelOption(baseModelOptions, chatInfo.modelId),
-    [baseModelOptions, chatInfo.modelId],
+    () => withMissingModelOption(allModelOptions, chatInfo.modelId),
+    [allModelOptions, chatInfo.modelId],
   );
   const modelOptionsLoading =
     modelOptions.length === 0 && modelOptionsLoadingFromApi;

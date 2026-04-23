@@ -144,10 +144,5 @@ export function sanitizeUserPreferencesForSession(
         ? null
         : preferences.defaultSubagentModelId,
     modelVariants: filteredModelVariants,
-    enabledModelIds: preferences.enabledModelIds.filter(
-      (modelId) =>
-        isModelAllowed(modelId) &&
-        !isRestrictedModelIdForSession(modelId, session, url),
-    ),
   };
 }

@@ -8,7 +8,7 @@ let currentSession: {
 };
 
 const preferencesState = {
-  defaultModelId: "anthropic/claude-haiku-4.5",
+  defaultModelId: "openai/gpt-5.4",
   defaultSubagentModelId: null as string | null,
   defaultSandboxType: "vercel" as const,
   defaultDiffMode: "unified" as const,
@@ -19,7 +19,6 @@ const preferencesState = {
   publicUsageEnabled: false,
   globalSkillRefs: [] as Array<{ source: string; skillName: string }>,
   modelVariants: [] as Array<Record<string, unknown>>,
-  enabledModelIds: [] as string[],
 };
 
 const updateCalls: Array<Record<string, unknown>> = [];
@@ -55,10 +54,9 @@ function createJsonRequest(method: "PATCH" | "GET", body?: unknown): Request {
 describe("/api/settings/preferences", () => {
   beforeEach(() => {
     currentSession = { user: { id: "user-1" } };
-    preferencesState.defaultModelId = "anthropic/claude-haiku-4.5";
+    preferencesState.defaultModelId = "openai/gpt-5.4";
     preferencesState.defaultSubagentModelId = null;
     preferencesState.modelVariants = [];
-    preferencesState.enabledModelIds = [];
     updateCalls.length = 0;
   });
 
@@ -115,8 +113,51 @@ describe("/api/settings/preferences", () => {
     };
 
     expect(body.preferences.defaultModelId).toBe("openai/gpt-5.4");
-    expect(body.preferences.defaultSubagentModelId).toBe("openai/gpt-5.4");
+    expect(body.preferences.defaultSubagentModelId).toBeNull();
     expect(body.preferences.modelVariants).toEqual([]);
+  });
+
+  test("PATCH rejects enabledModelIds because custom model lists are removed", async () => {
+    const { PATCH } = await routeModulePromise;
+
+    const response = await PATCH(
+      createJsonRequest("PATCH", { enabledModelIds: ["openai/gpt-5.4"] }),
+    );
+    const body = (await response.json()) as { error: string };
+
+    expect(response.status).toBe(400);
+    expect(body.error).toBe("enabledModelIds is no longer supported");
+    expect(updateCalls).toHaveLength(0);
+  });
+
+  test("PATCH rejects disallowed default model ids", async () => {
+    const { PATCH } = await routeModulePromise;
+
+    const response = await PATCH(
+      createJsonRequest("PATCH", {
+        defaultModelId: "anthropic/claude-haiku-4.5",
+      }),
+    );
+    const body = (await response.json()) as { error: string };
+
+    expect(response.status).toBe(400);
+    expect(body.error).toBe("Invalid defaultModelId");
+    expect(updateCalls).toHaveLength(0);
+  });
+
+  test("PATCH rejects disallowed subagent model ids", async () => {
+    const { PATCH } = await routeModulePromise;
+
+    const response = await PATCH(
+      createJsonRequest("PATCH", {
+        defaultSubagentModelId: "anthropic/claude-haiku-4.5",
+      }),
+    );
+    const body = (await response.json()) as { error: string };
+
+    expect(response.status).toBe(400);
+    expect(body.error).toBe("Invalid defaultSubagentModelId");
+    expect(updateCalls).toHaveLength(0);
   });
 
   test("PATCH rejects invalid sandbox types", async () => {

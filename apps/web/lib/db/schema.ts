@@ -362,10 +362,6 @@ export const userPreferences = pgTable("user_preferences", {
     .$type<ModelVariant[]>()
     .notNull()
     .default([]),
-  enabledModelIds: jsonb("enabled_model_ids")
-    .$type<string[]>()
-    .notNull()
-    .default([]),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

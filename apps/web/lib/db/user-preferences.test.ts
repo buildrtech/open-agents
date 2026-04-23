@@ -22,7 +22,6 @@ describe("toUserPreferencesData", () => {
       publicUsageEnabled: false,
       globalSkillRefs: [],
       modelVariants: [],
-      enabledModelIds: [],
     });
   });
 
@@ -41,7 +40,6 @@ describe("toUserPreferencesData", () => {
       publicUsageEnabled: false,
       globalSkillRefs: [],
       modelVariants: [],
-      enabledModelIds: [],
     });
 
     expect(result.defaultSandboxType).toBe("vercel");
@@ -63,7 +61,6 @@ describe("toUserPreferencesData", () => {
       publicUsageEnabled: false,
       globalSkillRefs: [],
       modelVariants: [],
-      enabledModelIds: [],
     });
 
     expect(result.defaultSandboxType).toBe("vercel");
@@ -87,7 +84,6 @@ describe("toUserPreferencesData", () => {
         { source: "vercel/ai", skillName: "bad name" },
       ] as never,
       modelVariants: [],
-      enabledModelIds: [],
     });
 
     expect(result.globalSkillRefs).toEqual([]);
@@ -111,7 +107,6 @@ describe("toUserPreferencesData", () => {
         { source: "vercel/ai", skillName: "ai-sdk" },
       ],
       modelVariants: [],
-      enabledModelIds: [],
     });
 
     expect(result.globalSkillRefs).toEqual([
@@ -134,7 +129,6 @@ describe("toUserPreferencesData", () => {
       publicUsageEnabled: false,
       globalSkillRefs: [],
       modelVariants: [{ id: "bad-id" }] as never,
-      enabledModelIds: [],
     });
 
     expect(result.modelVariants).toEqual([]);
@@ -162,7 +156,6 @@ describe("toUserPreferencesData", () => {
           providerOptions: { reasoningEffort: "low" },
         },
       ],
-      enabledModelIds: [],
     });
 
     expect(result).toEqual({
@@ -184,7 +177,6 @@ describe("toUserPreferencesData", () => {
           providerOptions: { reasoningEffort: "low" },
         },
       ],
-      enabledModelIds: [],
     });
   });
 
@@ -203,7 +195,6 @@ describe("toUserPreferencesData", () => {
       publicUsageEnabled: true,
       globalSkillRefs: [],
       modelVariants: [],
-      enabledModelIds: [],
     });
 
     expect(result.publicUsageEnabled).toBe(true);

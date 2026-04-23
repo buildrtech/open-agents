@@ -56,7 +56,6 @@ const basePreferences: UserPreferencesData = {
   publicUsageEnabled: false,
   globalSkillRefs: [],
   modelVariants: [userKimiVariant],
-  enabledModelIds: ["moonshotai/kimi-k2.6", "openai/gpt-5.4"],
 };
 
 describe("model access gating", () => {
@@ -108,7 +107,6 @@ describe("model access gating", () => {
         defaultModelId: "anthropic/claude-opus-4.6",
         defaultSubagentModelId: "variant:user-opus",
         modelVariants: [userKimiVariant, userOpusVariant],
-        enabledModelIds: ["moonshotai/kimi-k2.6", "anthropic/claude-opus-4.6"],
       },
       vercelSession,
       requestUrl,
@@ -118,7 +116,6 @@ describe("model access gating", () => {
       defaultModelId: "openai/gpt-5.4",
       defaultSubagentModelId: null,
       modelVariants: [userKimiVariant],
-      enabledModelIds: ["moonshotai/kimi-k2.6"],
     });
   });
 
