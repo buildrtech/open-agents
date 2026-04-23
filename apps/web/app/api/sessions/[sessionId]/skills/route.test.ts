@@ -286,6 +286,7 @@ describe("/api/sessions/[sessionId]/skills", () => {
         skillDirs: [
           "/workspace/.claude/skills",
           "/workspace/.agents/skills",
+          "/forge/skills",
           "/root/.agents/skills",
         ],
       },

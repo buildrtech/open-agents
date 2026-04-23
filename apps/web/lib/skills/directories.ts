@@ -5,6 +5,7 @@ import type { Sandbox } from "@open-agents/sandbox";
 import { resolveSandboxHomeDirectory } from "@/lib/sandbox/home-directory";
 
 const PROJECT_SKILL_BASE_FOLDERS = [".claude", ".agents"];
+export const BUILTIN_SANDBOX_SKILLS_DIRECTORY = "/forge/skills";
 
 export function getProjectSkillDirectories(workingDirectory: string): string[] {
   return PROJECT_SKILL_BASE_FOLDERS.map((folder) =>
@@ -23,6 +24,7 @@ export async function getSandboxSkillDirectories(
 
   return [
     ...getProjectSkillDirectories(sandbox.workingDirectory),
+    BUILTIN_SANDBOX_SKILLS_DIRECTORY,
     getGlobalSkillsDirectory(homeDirectory),
   ];
 }

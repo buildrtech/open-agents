@@ -476,6 +476,7 @@ describe("/api/chat route", () => {
       [
         "/vercel/sandbox/.claude/skills",
         "/vercel/sandbox/.agents/skills",
+        "/forge/skills",
         "/root/.agents/skills",
       ],
     ]);

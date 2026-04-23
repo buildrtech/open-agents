@@ -92,7 +92,16 @@ describe("buildBuildrAppSnapshotCommands", () => {
     );
     expect(
       commands.some((command) =>
-        command.includes("sudo -u postgres initdb -D /var/lib/pgsql/data"),
+        command.includes(
+          "sudo install -d -o postgres -g postgres /var/lib/pgsql/data",
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      commands.some((command) =>
+        command.includes(
+          "test -f /var/lib/pgsql/data/PG_VERSION || (sudo rm -rf /var/lib/pgsql/data && sudo install -d -o postgres -g postgres /var/lib/pgsql/data && sudo -u postgres initdb -D /var/lib/pgsql/data)",
+        ),
       ),
     ).toBe(true);
     expect(commands.some((command) => command.includes("redis6"))).toBe(true);

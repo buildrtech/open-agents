@@ -38,7 +38,7 @@ export const DEFAULT_WORKING_DIRECTORY = "/vercel/sandbox";
 
 /**
  * Base snapshot for fresh cloud sandboxes.
- * - Current snapshot includes: bun + jq + agent-browser + chromium + code-server
+ * - Current snapshot includes: bun + jq + agent-browser + chromium + code-server + Forge harness skills
  * - Previous snapshot includes: bun + jq + agent-browser + chromium
  */
 export const DEFAULT_SANDBOX_BASE_SNAPSHOT_ID =
@@ -46,5 +46,6 @@ export const DEFAULT_SANDBOX_BASE_SNAPSHOT_ID =
   // Previous snapshot (bun + jq): "snap_MQ0NqdLL5qEXiYusgWL3K0yaMmql"
   // Previous snapshot (bun + jq + agent-browser + chromium): "snap_C8tUFhwRXZky4MaFvTuwO7DH66wx"
   // Previous snapshot (bun + jq + agent-browser + chromium + code-server): "snap_EjsphVxi07bFKrfojljJdIS41KHT"
-  // Current snapshot (Buildr app bootstrap base):
-  "snap_r7nomrMZPVPY4VlmamCoxaIfiBjQ";
+  // Previous snapshot (Buildr app bootstrap base): "snap_r7nomrMZPVPY4VlmamCoxaIfiBjQ"
+  // Current snapshot (Buildr app bootstrap base + Forge harness skills):
+  "snap_ouE2VaH0c3sCiq6I89AHucBxG3U1";

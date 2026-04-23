@@ -12,10 +12,18 @@ import {
   buildBuildrAppSnapshotCommands,
   collectBuildrAppSnapshotInputs,
 } from "./lib/buildr-app-snapshot";
+import {
+  buildForgeHarnessSkillSnapshotCommands,
+  collectForgeHarnessSkillSnapshotInputs,
+} from "./lib/forge-harness-skills-snapshot";
 import { parseRefreshBaseSnapshotArgs } from "./lib/refresh-base-snapshot-cli";
 
 const SANDBOX_BASE_SNAPSHOT_CONFIG_PATH = "apps/web/lib/sandbox/config.ts";
 const BUILDR_APP_ROOT = path.resolve(import.meta.dir, "../../app");
+const FORGE_HARNESS_SKILLS_ROOT = path.resolve(
+  import.meta.dir,
+  "../../forge/harness/skills",
+);
 
 function printUsage() {
   console.log(`Usage:
@@ -33,6 +41,9 @@ Options:
 Buildr app root:
   ${BUILDR_APP_ROOT}
 
+Forge harness skills root:
+  ${FORGE_HARNESS_SKILLS_ROOT}
+
 Current configured base snapshot:
   ${DEFAULT_SANDBOX_BASE_SNAPSHOT_ID}`);
 }
@@ -45,19 +56,33 @@ async function main() {
   }
 
   console.log(`Collecting Buildr app snapshot inputs from ${BUILDR_APP_ROOT}.`);
-  const inputs = await collectBuildrAppSnapshotInputs({
-    appRoot: BUILDR_APP_ROOT,
-  });
+  const [buildrAppInputs, forgeHarnessSkillInputs] = await Promise.all([
+    collectBuildrAppSnapshotInputs({
+      appRoot: BUILDR_APP_ROOT,
+    }),
+    collectForgeHarnessSkillSnapshotInputs({
+      skillsRoot: FORGE_HARNESS_SKILLS_ROOT,
+    }),
+  ]);
   console.log(
-    `Staged ${inputs.stagedFiles.length} files for dependency warmup.`,
+    `Staged ${buildrAppInputs.stagedFiles.length} Buildr app files for dependency warmup.`,
+  );
+  console.log(
+    `Staged ${forgeHarnessSkillInputs.stagedFiles.length} Forge harness skill files for the base snapshot.`,
   );
 
   const result = await refreshBaseSnapshot({
     baseSnapshotId: parsed.bootstrapFromRuntime
       ? undefined
       : (parsed.baseSnapshotId ?? DEFAULT_SANDBOX_BASE_SNAPSHOT_ID),
-    stagedFiles: inputs.stagedFiles,
-    commands: buildBuildrAppSnapshotCommands(),
+    stagedFiles: [
+      ...buildrAppInputs.stagedFiles,
+      ...forgeHarnessSkillInputs.stagedFiles,
+    ],
+    commands: [
+      ...buildForgeHarnessSkillSnapshotCommands(),
+      ...buildBuildrAppSnapshotCommands(),
+    ],
     sandboxTimeoutMs: parsed.sandboxTimeoutMs ?? DEFAULT_SANDBOX_TIMEOUT_MS,
     commandTimeoutMs: parsed.commandTimeoutMs,
     ports: DEFAULT_SANDBOX_PORTS,
