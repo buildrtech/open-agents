@@ -76,17 +76,17 @@ describe("/api/models context window enrichment", () => {
   test("overrides gateway context windows from models.dev", async () => {
     gatewayModels.push(
       {
+        id: "openai/gpt-5.4",
+        modelType: "language",
+        context_window: 200_000,
+      },
+      {
+        id: "moonshotai/kimi-k2.6",
+        modelType: "language",
+        context_window: 200_000,
+      },
+      {
         id: "openai/gpt-5.3-codex",
-        modelType: "language",
-        context_window: 200_000,
-      },
-      {
-        id: "anthropic/claude-opus-4.6",
-        modelType: "language",
-        context_window: 200_000,
-      },
-      {
-        id: "openai/gpt-4o-mini",
         modelType: "language",
         context_window: 128_000,
       },
@@ -100,15 +100,15 @@ describe("/api/models context window enrichment", () => {
     modelsDevApiData = {
       openai: {
         models: {
-          "gpt-5.3-codex": {
+          "gpt-5.4": {
             limit: { context: 400_000 },
           },
         },
       },
-      anthropic: {
+      moonshotai: {
         models: {
-          "claude-opus-4.6": {
-            limit: { context: 1_000_000 },
+          "kimi-k2.6": {
+            limit: { context: 262_144 },
           },
         },
       },
@@ -126,21 +126,25 @@ describe("/api/models context window enrichment", () => {
       body.models.map((model) => [model.id, model.context_window]),
     );
 
-    expect(contextById.get("openai/gpt-5.3-codex")).toBe(400_000);
-    expect(contextById.get("anthropic/claude-opus-4.6")).toBe(1_000_000);
-    expect(contextById.get("openai/gpt-4o-mini")).toBe(128_000);
+    expect(contextById.get("openai/gpt-5.4")).toBe(400_000);
+    expect(contextById.get("moonshotai/kimi-k2.6")).toBe(262_144);
+    expect(contextById.has("openai/gpt-5.3-codex")).toBe(false);
     expect(contextById.has("openai/image-gen")).toBe(false);
     expect(requestedUrls).toContain("https://models.dev/api.json");
   });
 
-  test("hides Claude Opus models for managed trial users", async () => {
+  test("returns only allowlisted models for managed trial users", async () => {
     gatewayModels.push(
       {
-        id: "anthropic/claude-opus-4.6",
+        id: "openai/gpt-5.4",
         modelType: "language",
       },
       {
-        id: "anthropic/claude-haiku-4.5",
+        id: "moonshotai/kimi-k2.6",
+        modelType: "language",
+      },
+      {
+        id: "anthropic/claude-opus-4.6",
         modelType: "language",
       },
     );
@@ -158,24 +162,25 @@ describe("/api/models context window enrichment", () => {
     };
 
     expect(body.models.map((model) => model.id)).toEqual([
-      "anthropic/claude-haiku-4.5",
+      "openai/gpt-5.4",
+      "moonshotai/kimi-k2.6",
     ]);
   });
 
   test("keeps gateway context window when models.dev only has related ids", async () => {
     gatewayModels.push({
-      id: "openai/gpt-5.3-codex-2026-02-15",
+      id: "moonshotai/kimi-k2.6",
       modelType: "language",
       context_window: 200_000,
     });
 
     modelsDevApiData = {
-      openai: {
+      moonshotai: {
         models: {
-          "gpt-5": {
+          "kimi-k2": {
             limit: { context: 272_000 },
           },
-          "gpt-5.3-codex": {
+          "kimi-k2.5": {
             limit: { context: 400_000 },
           },
         },
@@ -197,7 +202,7 @@ describe("/api/models context window enrichment", () => {
 
   test("keeps valid models.dev metadata when sibling fields are invalid", async () => {
     gatewayModels.push({
-      id: "openai/gpt-5.3-codex",
+      id: "openai/gpt-5.4",
       modelType: "language",
       context_window: 200_000,
     });
@@ -206,7 +211,7 @@ describe("/api/models context window enrichment", () => {
       invalidProvider: "bad",
       openai: {
         models: {
-          "gpt-5.3-codex": {
+          "gpt-5.4": {
             limit: { context: "400_000" },
             cost: {
               input: 1.25,
@@ -245,7 +250,7 @@ describe("/api/models context window enrichment", () => {
 
     expect(body.models).toHaveLength(1);
     expect(body.models[0]).toMatchObject({
-      id: "openai/gpt-5.3-codex",
+      id: "openai/gpt-5.4",
       context_window: 200_000,
       cost: {
         input: 1.25,

@@ -30,6 +30,13 @@ const vercelSession = {
 
 const requestUrl = "https://open-agents.dev/api/test";
 
+const userKimiVariant: ModelVariant = {
+  id: "variant:user-kimi",
+  name: "User Kimi",
+  baseModelId: "moonshotai/kimi-k2.6",
+  providerOptions: {},
+};
+
 const userOpusVariant: ModelVariant = {
   id: "variant:user-opus",
   name: "User Opus",
@@ -38,8 +45,8 @@ const userOpusVariant: ModelVariant = {
 };
 
 const basePreferences: UserPreferencesData = {
-  defaultModelId: "anthropic/claude-opus-4.6",
-  defaultSubagentModelId: "variant:builtin:claude-opus-4.6-high",
+  defaultModelId: "moonshotai/kimi-k2.6",
+  defaultSubagentModelId: "openai/gpt-5.4",
   defaultSandboxType: "vercel",
   defaultDiffMode: "unified",
   autoCommitPush: false,
@@ -48,69 +55,74 @@ const basePreferences: UserPreferencesData = {
   alertSoundEnabled: true,
   publicUsageEnabled: false,
   globalSkillRefs: [],
-  modelVariants: [userOpusVariant],
-  enabledModelIds: ["anthropic/claude-opus-4.6", "openai/gpt-5"],
+  modelVariants: [userKimiVariant],
+  enabledModelIds: ["moonshotai/kimi-k2.6", "openai/gpt-5.4"],
 };
 
 describe("model access gating", () => {
-  test("filters Claude Opus base models for managed trial users", () => {
+  test("filters base models to the company allowlist", () => {
     const result = filterModelsForSession(
       [
+        { id: "openai/gpt-5.4" },
+        { id: "moonshotai/kimi-k2.6" },
         { id: "anthropic/claude-opus-4.6" },
-        { id: "anthropic/claude-haiku-4.5" },
       ],
-      managedTrialSession,
+      vercelSession,
       requestUrl,
     );
 
-    expect(result).toEqual([{ id: "anthropic/claude-haiku-4.5" }]);
+    expect(result).toEqual([
+      { id: "openai/gpt-5.4" },
+      { id: "moonshotai/kimi-k2.6" },
+    ]);
   });
 
-  test("filters Opus-backed variants for managed trial users", () => {
+  test("filters variants whose base model is not allowlisted", () => {
     const result = filterModelVariantsForSession(
       [
+        userKimiVariant,
         userOpusVariant,
-        {
-          id: "variant:user-gpt",
-          name: "User GPT",
-          baseModelId: "openai/gpt-5",
-          providerOptions: {},
-        },
       ],
-      managedTrialSession,
+      vercelSession,
       requestUrl,
     );
 
-    expect(result.map((variant) => variant.id)).toEqual(["variant:user-gpt"]);
+    expect(result.map((variant) => variant.id)).toEqual(["variant:user-kimi"]);
   });
 
-  test("falls back to the app default when a managed trial user selects an Opus variant", () => {
+  test("falls back to the app default when a selected model is not allowlisted", () => {
     const result = sanitizeSelectedModelIdForSession(
-      "variant:builtin:claude-opus-4.6-high",
-      [userOpusVariant],
-      managedTrialSession,
+      "variant:user-opus",
+      [userKimiVariant, userOpusVariant],
+      vercelSession,
       requestUrl,
     );
 
     expect(result).toBe("openai/gpt-5.4");
   });
 
-  test("sanitizes managed trial preferences without mutating the database shape", () => {
+  test("sanitizes preferences by removing disallowed selections", () => {
     const result = sanitizeUserPreferencesForSession(
-      basePreferences,
-      managedTrialSession,
+      {
+        ...basePreferences,
+        defaultModelId: "anthropic/claude-opus-4.6",
+        defaultSubagentModelId: "variant:user-opus",
+        modelVariants: [userKimiVariant, userOpusVariant],
+        enabledModelIds: ["moonshotai/kimi-k2.6", "anthropic/claude-opus-4.6"],
+      },
+      vercelSession,
       requestUrl,
     );
 
     expect(result).toMatchObject({
       defaultModelId: "openai/gpt-5.4",
-      defaultSubagentModelId: "openai/gpt-5.4",
-      modelVariants: [],
-      enabledModelIds: ["openai/gpt-5"],
+      defaultSubagentModelId: null,
+      modelVariants: [userKimiVariant],
+      enabledModelIds: ["moonshotai/kimi-k2.6"],
     });
   });
 
-  test("leaves Vercel users unchanged", () => {
+  test("leaves already-allowlisted preferences unchanged", () => {
     const result = sanitizeUserPreferencesForSession(
       basePreferences,
       vercelSession,

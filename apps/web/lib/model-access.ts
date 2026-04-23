@@ -2,6 +2,11 @@ import type { UserPreferencesData } from "@/lib/db/user-preferences";
 import { isManagedTemplateTrialUser } from "@/lib/managed-template-trial";
 import { APP_DEFAULT_MODEL_ID } from "@/lib/models";
 import {
+  filterAllowedModelVariants,
+  filterAllowedModels,
+  isModelAllowed,
+} from "@/lib/model-availability";
+import {
   getAllVariants,
   MODEL_VARIANT_ID_PREFIX,
   type ModelVariant,
@@ -39,11 +44,12 @@ export function filterModelsForSession<T extends { id: string }>(
   session: SessionLike,
   url: string | URL,
 ): T[] {
+  const companyAllowedModels = filterAllowedModels(models);
   if (!hasManagedTemplateModelRestrictions(session, url)) {
-    return models;
+    return companyAllowedModels;
   }
 
-  return models.filter(
+  return companyAllowedModels.filter(
     (model) =>
       !RESTRICTED_MODEL_PREFIXES.some((prefix) => model.id.startsWith(prefix)),
   );
@@ -54,11 +60,12 @@ export function filterModelVariantsForSession(
   session: SessionLike,
   url: string | URL,
 ): ModelVariant[] {
+  const companyAllowedVariants = filterAllowedModelVariants(modelVariants);
   if (!hasManagedTemplateModelRestrictions(session, url)) {
-    return modelVariants;
+    return companyAllowedVariants;
   }
 
-  return modelVariants.filter(
+  return companyAllowedVariants.filter(
     (variant) =>
       !RESTRICTED_MODEL_PREFIXES.some((prefix) =>
         variant.baseModelId.startsWith(prefix),
@@ -72,11 +79,14 @@ export function sanitizeSelectedModelIdForSession(
   session: SessionLike,
   url: string | URL,
 ): string | null | undefined {
-  if (!modelId || !hasManagedTemplateModelRestrictions(session, url)) {
+  if (!modelId) {
     return modelId;
   }
 
-  if (RESTRICTED_MODEL_PREFIXES.some((prefix) => modelId.startsWith(prefix))) {
+  if (
+    !modelId.startsWith(MODEL_VARIANT_ID_PREFIX) &&
+    !isModelAllowed(modelId)
+  ) {
     return APP_DEFAULT_MODEL_ID;
   }
 
@@ -89,6 +99,13 @@ export function sanitizeSelectedModelIdForSession(
     return APP_DEFAULT_MODEL_ID;
   }
 
+  if (
+    hasManagedTemplateModelRestrictions(session, url) &&
+    RESTRICTED_MODEL_PREFIXES.some((prefix) => modelId.startsWith(prefix))
+  ) {
+    return APP_DEFAULT_MODEL_ID;
+  }
+
   return modelId;
 }
 
@@ -97,10 +114,6 @@ export function sanitizeUserPreferencesForSession(
   session: SessionLike,
   url: string | URL,
 ): UserPreferencesData {
-  if (!hasManagedTemplateModelRestrictions(session, url)) {
-    return preferences;
-  }
-
   const filteredModelVariants = filterModelVariantsForSession(
     preferences.modelVariants,
     session,
@@ -127,10 +140,14 @@ export function sanitizeUserPreferencesForSession(
         availableModelVariants,
         session,
         url,
-      ) ?? null,
+      ) !== preferences.defaultSubagentModelId
+        ? null
+        : preferences.defaultSubagentModelId,
     modelVariants: filteredModelVariants,
     enabledModelIds: preferences.enabledModelIds.filter(
-      (modelId) => !isRestrictedModelIdForSession(modelId, session, url),
+      (modelId) =>
+        isModelAllowed(modelId) &&
+        !isRestrictedModelIdForSession(modelId, session, url),
     ),
   };
 }

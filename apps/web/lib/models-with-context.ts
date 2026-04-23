@@ -2,7 +2,10 @@ import "server-only";
 
 import { gateway } from "ai";
 import { z } from "zod";
-import { filterDisabledModels } from "./model-availability";
+import {
+  assertDefaultModelIsAllowed,
+  filterAllowedModels,
+} from "./model-availability";
 import type {
   AvailableModel,
   AvailableModelCost,
@@ -219,7 +222,8 @@ export async function fetchAvailableLanguageModels(): Promise<
   AvailableModel[]
 > {
   const models = await fetchGatewayModels();
-  return filterDisabledModels(
+  assertDefaultModelIsAllowed();
+  return filterAllowedModels(
     models.filter((model) => model.modelType === "language"),
   );
 }
