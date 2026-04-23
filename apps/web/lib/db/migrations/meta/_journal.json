@@ -239,6 +239,13 @@
       "when": 1776848655619,
       "tag": "0033_drop_legacy_github_accounts",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1776962615124,
+      "tag": "0034_nosy_quasimodo",
+      "breakpoints": true
     }
   ]
 }
