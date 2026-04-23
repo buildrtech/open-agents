@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test";
+import { APP_DEFAULT_MODEL_ID } from "@/lib/models";
 
 type AuthResult =
   | {
@@ -50,7 +51,7 @@ let createdChat: ChatRecord = {
   id: "generated-chat-id",
   sessionId: "session-1",
   title: "New chat",
-  modelId: "model-default",
+  modelId: APP_DEFAULT_MODEL_ID,
 };
 
 const getSummaryCalls: Array<{ sessionId: string; userId: string }> = [];
@@ -93,7 +94,7 @@ mock.module("@/lib/db/sessions", () => ({
 
 mock.module("@/lib/db/user-preferences", () => ({
   getUserPreferences: async () => ({
-    defaultModelId: "model-default",
+    defaultModelId: "anthropic/claude-haiku-4.5",
     defaultSubagentModelId: null,
     defaultSandboxType: "vercel",
     defaultDiffMode: "unified",
@@ -104,7 +105,6 @@ mock.module("@/lib/db/user-preferences", () => ({
     publicUsageEnabled: false,
     globalSkillRefs: [],
     modelVariants: [],
-    enabledModelIds: [],
   }),
 }));
 
@@ -138,7 +138,7 @@ describe("/api/sessions/[sessionId]/chats", () => {
       id: "generated-chat-id",
       sessionId: "session-1",
       title: "New chat",
-      modelId: "model-default",
+      modelId: APP_DEFAULT_MODEL_ID,
     };
     getSummaryCalls.length = 0;
     createChatCalls.length = 0;
@@ -190,7 +190,7 @@ describe("/api/sessions/[sessionId]/chats", () => {
 
     expect(response.status).toBe(200);
     expect(body.chats).toEqual(chatSummaries);
-    expect(body.defaultModelId).toBe("model-default");
+    expect(body.defaultModelId).toBe(APP_DEFAULT_MODEL_ID);
     expect(getSummaryCalls).toEqual([
       { sessionId: "session-1", userId: "user-1" },
     ]);
@@ -262,7 +262,7 @@ describe("/api/sessions/[sessionId]/chats", () => {
         id: "generated-chat-id",
         sessionId: "session-abc",
         title: "New chat",
-        modelId: "model-default",
+        modelId: APP_DEFAULT_MODEL_ID,
       },
     ]);
     expect(body.chat.id).toBe("generated-chat-id");

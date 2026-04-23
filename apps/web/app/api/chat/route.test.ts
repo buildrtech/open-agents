@@ -1,5 +1,6 @@
 import { afterAll, beforeEach, describe, expect, mock, test } from "bun:test";
 import { assistantFileLinkPrompt } from "@/lib/assistant-file-links";
+import { APP_DEFAULT_MODEL_ID } from "@/lib/models";
 
 mock.module("server-only", () => ({}));
 
@@ -140,6 +141,13 @@ mock.module("@open-agents/agent", () => ({
     return [];
   },
   gateway: () => "mock-model",
+  mergeProviderOptions: (
+    defaults: Record<string, Record<string, unknown>>,
+    overrides?: Record<string, Record<string, unknown>>,
+  ) => ({
+    ...defaults,
+    ...overrides,
+  }),
 }));
 
 mock.module("@open-agents/sandbox", () => ({
@@ -364,8 +372,8 @@ describe("/api/chat route", () => {
       {
         id: "variant:test-model",
         name: "Test model",
-        baseModelId: "openai/gpt-5",
-        providerOptions: {},
+        baseModelId: "openai/gpt-5.4",
+        providerOptions: { reasoningEffort: "medium" },
       },
     ];
 
@@ -376,7 +384,84 @@ describe("/api/chat route", () => {
     expect(startCalls[0]?.[1]).toEqual([
       expect.objectContaining({
         selectedModelId: "variant:test-model",
-        modelId: "openai/gpt-5",
+        modelId: "openai/gpt-5.4",
+        agentOptions: expect.objectContaining({
+          model: {
+            id: "openai/gpt-5.4",
+            providerOptionsOverrides: {
+              gateway: {
+                only: ["openai"],
+                order: ["openai"],
+              },
+              openai: {
+                reasoningEffort: "medium",
+                store: false,
+              },
+            },
+          },
+        }),
+      }),
+    ]);
+  });
+
+  test("passes company-required gateway routing for direct model ids", async () => {
+    const { POST } = await routeModulePromise;
+    if (!chatRecord) {
+      throw new Error("chatRecord must be set");
+    }
+
+    chatRecord.modelId = "moonshotai/kimi-k2.6";
+
+    const response = await POST(createValidRequest());
+
+    expect(response.ok).toBe(true);
+    expect(startCalls).toHaveLength(1);
+    expect(startCalls[0]?.[1]).toEqual([
+      expect.objectContaining({
+        selectedModelId: "moonshotai/kimi-k2.6",
+        modelId: "moonshotai/kimi-k2.6",
+        agentOptions: expect.objectContaining({
+          model: {
+            id: "moonshotai/kimi-k2.6",
+            providerOptionsOverrides: {
+              gateway: {
+                only: ["fireworks"],
+                order: ["fireworks"],
+              },
+            },
+          },
+        }),
+      }),
+    ]);
+  });
+
+  test("falls back to the repo default model when a stored model is disallowed", async () => {
+    const { POST } = await routeModulePromise;
+    if (!chatRecord) {
+      throw new Error("chatRecord must be set");
+    }
+
+    chatRecord.modelId = "anthropic/claude-sonnet-4.6";
+
+    const response = await POST(createValidRequest());
+
+    expect(response.ok).toBe(true);
+    expect(startCalls).toHaveLength(1);
+    expect(startCalls[0]?.[1]).toEqual([
+      expect.objectContaining({
+        selectedModelId: APP_DEFAULT_MODEL_ID,
+        modelId: APP_DEFAULT_MODEL_ID,
+        agentOptions: expect.objectContaining({
+          model: {
+            id: APP_DEFAULT_MODEL_ID,
+            providerOptionsOverrides: {
+              gateway: {
+                only: ["openai"],
+                order: ["openai"],
+              },
+            },
+          },
+        }),
       }),
     ]);
   });

@@ -4,24 +4,46 @@ import { APP_DEFAULT_MODEL_ID } from "@/lib/models";
 import { resolveChatModelSelection } from "./model-selection";
 
 describe("resolveChatModelSelection", () => {
-  test("returns direct model ids unchanged", () => {
-    const selection = resolveChatModelSelection({
-      selectedModelId: "openai/gpt-5",
-      modelVariants: [],
-      missingVariantLabel: "Selected model variant",
+  test("applies required gateway routing for direct allowlisted model ids", () => {
+    expect(
+      resolveChatModelSelection({
+        selectedModelId: "openai/gpt-5.4",
+        modelVariants: [],
+        missingVariantLabel: "Selected model variant",
+      }),
+    ).toEqual({
+      id: "openai/gpt-5.4",
+      providerOptionsOverrides: {
+        gateway: {
+          only: ["openai"],
+          order: ["openai"],
+        },
+      },
     });
 
-    expect(selection).toEqual({
-      id: "openai/gpt-5",
+    expect(
+      resolveChatModelSelection({
+        selectedModelId: "moonshotai/kimi-k2.6",
+        modelVariants: [],
+        missingVariantLabel: "Selected model variant",
+      }),
+    ).toEqual({
+      id: "moonshotai/kimi-k2.6",
+      providerOptionsOverrides: {
+        gateway: {
+          only: ["fireworks"],
+          order: ["fireworks"],
+        },
+      },
     });
   });
 
-  test("resolves variant ids with provider options", () => {
+  test("merges variant provider options with required gateway routing", () => {
     const modelVariants: ModelVariant[] = [
       {
         id: "variant:openai-medium",
         name: "OpenAI Medium",
-        baseModelId: "openai/gpt-5",
+        baseModelId: "openai/gpt-5.4",
         providerOptions: {
           reasoningEffort: "medium",
         },
@@ -35,8 +57,12 @@ describe("resolveChatModelSelection", () => {
     });
 
     expect(selection).toEqual({
-      id: "openai/gpt-5",
+      id: "openai/gpt-5.4",
       providerOptionsOverrides: {
+        gateway: {
+          only: ["openai"],
+          order: ["openai"],
+        },
         openai: {
           reasoningEffort: "medium",
           store: false,
@@ -55,6 +81,10 @@ describe("resolveChatModelSelection", () => {
     expect(selection).toEqual({
       id: "openai/gpt-5.4",
       providerOptionsOverrides: {
+        gateway: {
+          only: ["openai"],
+          order: ["openai"],
+        },
         openai: {
           reasoningEffort: "xhigh",
           reasoningSummary: "auto",
@@ -80,6 +110,12 @@ describe("resolveChatModelSelection", () => {
 
       expect(selection).toEqual({
         id: APP_DEFAULT_MODEL_ID,
+        providerOptionsOverrides: {
+          gateway: {
+            only: ["openai"],
+            order: ["openai"],
+          },
+        },
       });
       expect(warnings).toEqual([
         [
@@ -100,6 +136,12 @@ describe("resolveChatModelSelection", () => {
 
     expect(selection).toEqual({
       id: APP_DEFAULT_MODEL_ID,
+      providerOptionsOverrides: {
+        gateway: {
+          only: ["openai"],
+          order: ["openai"],
+        },
+      },
     });
   });
 });

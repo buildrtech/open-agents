@@ -123,7 +123,10 @@ export async function PATCH(req: Request, context: RouteContext) {
       session,
       req.url,
     );
-    updatePayload.modelId = sanitizedModelId ?? nextModelId;
+    if (sanitizedModelId !== nextModelId) {
+      return Response.json({ error: "Invalid modelId" }, { status: 400 });
+    }
+    updatePayload.modelId = sanitizedModelId;
   }
 
   const updatedChat = await updateChat(chatId, updatePayload);

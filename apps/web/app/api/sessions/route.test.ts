@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test";
+import { APP_DEFAULT_MODEL_ID } from "@/lib/models";
 import type { VercelProjectSelection } from "@/lib/vercel/types";
 
 let currentSession: {
@@ -44,7 +45,6 @@ mock.module("@/lib/db/user-preferences", () => ({
     publicUsageEnabled: false,
     globalSkillRefs: [{ source: "vercel/ai", skillName: "ai-sdk" }],
     modelVariants: [],
-    enabledModelIds: [],
   }),
 }));
 
@@ -153,6 +153,27 @@ describe("/api/sessions POST vercel project linking", () => {
       "This hosted deployment includes 1 trial session for non-Vercel accounts. Deploy your own copy to start more.",
     );
     expect(createCalls).toHaveLength(0);
+  });
+
+  test("uses the repo default model when the saved default is not allowlisted", async () => {
+    const { POST } = await routeModulePromise;
+
+    const response = await POST(
+      createJsonRequest({
+        branch: "main",
+        cloneUrl: "https://github.com/vercel-labs/open-agents",
+        repoOwner: "vercel-labs",
+        repoName: "open-agents",
+      }),
+    );
+    const body = (await response.json()) as {
+      chat: {
+        modelId: string;
+      };
+    };
+
+    expect(response.status).toBe(200);
+    expect(body.chat.modelId).toBe(APP_DEFAULT_MODEL_ID);
   });
 
   test("explicit Vercel project is validated against live repo matches before it is persisted", async () => {

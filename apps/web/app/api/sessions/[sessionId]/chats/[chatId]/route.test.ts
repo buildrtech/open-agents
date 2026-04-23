@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test";
+import { APP_DEFAULT_MODEL_ID } from "@/lib/models";
 
 type AuthResult =
   | {
@@ -45,7 +46,7 @@ let ownedSessionChatResult: OwnedSessionChatResult = {
   chat: {
     id: "chat-1",
     sessionId: "session-1",
-    modelId: "model-1",
+    modelId: APP_DEFAULT_MODEL_ID,
     activeStreamId: null,
   },
 };
@@ -66,7 +67,7 @@ let updatedChat: ChatRecord | null = {
   id: "chat-1",
   sessionId: "session-1",
   title: "Updated",
-  modelId: "model-updated",
+  modelId: "moonshotai/kimi-k2.6",
 };
 let chatsInSession: Array<{ id: string }> = [
   { id: "chat-1" },
@@ -101,7 +102,7 @@ mock.module("@/lib/db/sessions", () => ({
 
 mock.module("@/lib/db/user-preferences", () => ({
   getUserPreferences: async () => ({
-    defaultModelId: "model-default",
+    defaultModelId: APP_DEFAULT_MODEL_ID,
     defaultSubagentModelId: null,
     defaultSandboxType: "vercel",
     defaultDiffMode: "unified",
@@ -112,7 +113,6 @@ mock.module("@/lib/db/user-preferences", () => ({
     publicUsageEnabled: false,
     globalSkillRefs: [],
     modelVariants: [],
-    enabledModelIds: [],
   }),
 }));
 
@@ -149,7 +149,7 @@ describe("/api/sessions/[sessionId]/chats/[chatId]", () => {
       chat: {
         id: "chat-1",
         sessionId: "session-1",
-        modelId: "model-1",
+        modelId: APP_DEFAULT_MODEL_ID,
         activeStreamId: null,
       },
     };
@@ -164,7 +164,7 @@ describe("/api/sessions/[sessionId]/chats/[chatId]", () => {
       id: "chat-1",
       sessionId: "session-1",
       title: "Updated",
-      modelId: "model-updated",
+      modelId: "moonshotai/kimi-k2.6",
     };
     chatsInSession = [{ id: "chat-1" }, { id: "chat-2" }];
     updateChatCalls.length = 0;
@@ -190,7 +190,7 @@ describe("/api/sessions/[sessionId]/chats/[chatId]", () => {
       chat: {
         id: "chat-1",
         sessionId: "session-1",
-        modelId: "model-1",
+        modelId: "moonshotai/kimi-k2.6",
         activeStreamId: "stream-1",
       },
     };
@@ -216,7 +216,7 @@ describe("/api/sessions/[sessionId]/chats/[chatId]", () => {
     expect(response.status).toBe(200);
     expect(body.chat).toEqual({
       id: "chat-1",
-      modelId: "model-1",
+      modelId: "moonshotai/kimi-k2.6",
       activeStreamId: "stream-1",
     });
     expect(body.isStreaming).toBe(true);
@@ -290,7 +290,10 @@ describe("/api/sessions/[sessionId]/chats/[chatId]", () => {
     const { PATCH } = await routeModulePromise;
 
     const response = await PATCH(
-      createPatchRequest({ title: "  New title  ", modelId: "  model-2  " }),
+      createPatchRequest({
+        title: "  New title  ",
+        modelId: "  moonshotai/kimi-k2.6  ",
+      }),
       createContext(),
     );
     const body = (await response.json()) as { chat: ChatRecord };
@@ -299,10 +302,46 @@ describe("/api/sessions/[sessionId]/chats/[chatId]", () => {
     expect(updateChatCalls).toEqual([
       {
         chatId: "chat-1",
-        patch: { title: "New title", modelId: "model-2" },
+        patch: { title: "New title", modelId: "moonshotai/kimi-k2.6" },
       },
     ]);
     expect(body.chat.id).toBe("chat-1");
+  });
+
+  test("GET falls back to the repo default model for stale disallowed chat models", async () => {
+    ownedSessionChatResult = {
+      ok: true,
+      sessionRecord: { id: "session-1" },
+      chat: {
+        id: "chat-1",
+        sessionId: "session-1",
+        modelId: "anthropic/claude-sonnet-4.6",
+        activeStreamId: null,
+      },
+    };
+    const { GET } = await routeModulePromise;
+
+    const response = await GET(createGetRequest(), createContext());
+    const body = (await response.json()) as {
+      chat: { id: string; modelId: string; activeStreamId: string | null };
+    };
+
+    expect(response.status).toBe(200);
+    expect(body.chat.modelId).toBe(APP_DEFAULT_MODEL_ID);
+  });
+
+  test("PATCH rejects disallowed model ids", async () => {
+    const { PATCH } = await routeModulePromise;
+
+    const response = await PATCH(
+      createPatchRequest({ modelId: "anthropic/claude-sonnet-4.6" }),
+      createContext(),
+    );
+    const body = (await response.json()) as { error: string };
+
+    expect(response.status).toBe(400);
+    expect(body.error).toBe("Invalid modelId");
+    expect(updateChatCalls).toHaveLength(0);
   });
 
   test("PATCH returns 404 when updateChat returns null", async () => {

@@ -1,3 +1,4 @@
+import type { ProviderOptionsByProvider } from "@open-agents/agent";
 import { APP_DEFAULT_MODEL_ID } from "@/lib/models";
 
 export const ALLOWED_PROVIDER_IDS = new Set(["openai", "fireworks"]);
@@ -6,11 +7,6 @@ export const ALLOWED_MODEL_IDS = new Set([
   APP_DEFAULT_MODEL_ID,
   "moonshotai/kimi-k2.6",
 ]);
-
-export type ProviderOptionsByProvider = Record<
-  string,
-  Record<string, unknown>
->;
 
 export function assertDefaultModelIsAllowed(): void {
   if (!ALLOWED_MODEL_IDS.has(APP_DEFAULT_MODEL_ID)) {
