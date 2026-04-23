@@ -16,9 +16,10 @@ describe("collectBuildrAppSnapshotInputs", () => {
         }
 
         return [
-          "gems/email_forward_parser/Gemfile",
+          "gems/email_forward_parser/README.md",
           "gems/email_forward_parser/email_forward_parser.gemspec",
           "gems/email_forward_parser/lib/email_forward_parser.rb",
+          "gems/email_forward_parser/spec/email_forward_parser_spec.rb",
         ];
       },
     });
@@ -57,8 +58,8 @@ describe("collectBuildrAppSnapshotInputs", () => {
         content: "content:../app/mise.toml",
       },
       {
-        path: `${BUILDR_APP_SNAPSHOT_CONTEXT_ROOT}/gems/email_forward_parser/Gemfile`,
-        content: "content:../app/gems/email_forward_parser/Gemfile",
+        path: `${BUILDR_APP_SNAPSHOT_CONTEXT_ROOT}/gems/email_forward_parser/README.md`,
+        content: "content:../app/gems/email_forward_parser/README.md",
       },
       {
         path: `${BUILDR_APP_SNAPSHOT_CONTEXT_ROOT}/gems/email_forward_parser/email_forward_parser.gemspec`,
@@ -75,15 +76,44 @@ describe("collectBuildrAppSnapshotInputs", () => {
 });
 
 describe("buildBuildrAppSnapshotCommands", () => {
-  test("builds commands that install system deps, services, toolchains, and warm caches", () => {
+  test("builds commands that install runtime-compatible system deps, services, toolchains, and warm caches", () => {
     const commands = buildBuildrAppSnapshotCommands();
 
-    expect(commands.some((command) => command.includes("postgresql-18"))).toBe(
+    expect(
+      commands.some((command) => command.includes("sudo dnf install -y")),
+    ).toBe(true);
+    expect(
+      commands.some((command) =>
+        command.includes("sudo dnf install -y --allowerasing gnupg2"),
+      ),
+    ).toBe(true);
+    expect(commands.some((command) => command.includes("postgresql17"))).toBe(
       true,
     );
-    expect(commands.some((command) => command.includes("redis-server"))).toBe(
-      true,
-    );
+    expect(
+      commands.some((command) =>
+        command.includes("sudo -u postgres initdb -D /var/lib/pgsql/data"),
+      ),
+    ).toBe(true);
+    expect(commands.some((command) => command.includes("redis6"))).toBe(true);
+    expect(
+      commands.some((command) => command.includes("mise install ruby@4.0.2")),
+    ).toBe(true);
+    expect(
+      commands.some((command) => command.includes("mise install node@24.14.0")),
+    ).toBe(true);
+    expect(
+      commands.some((command) =>
+        command.includes("mise install python@3.13.3"),
+      ),
+    ).toBe(true);
+    expect(
+      commands.some((command) => command.includes("/usr/local/bin/ruby")),
+    ).toBe(true);
+    expect(
+      commands.some((command) => command.includes("/usr/local/bin/pnpm")),
+    ).toBe(true);
+    expect(commands.some((command) => command.includes("apt-get"))).toBe(false);
     expect(commands.some((command) => command.includes("bundle install"))).toBe(
       true,
     );
@@ -98,7 +128,9 @@ describe("buildBuildrAppSnapshotCommands", () => {
       ),
     ).toBe(true);
     expect(
-      commands.some((command) => command.includes("rm -f /root/.npmrc")),
+      commands.some((command) =>
+        command.includes("rm -f /home/vercel-sandbox/.npmrc"),
+      ),
     ).toBe(true);
     expect(commands.at(-1)).toContain("/vercel/sandbox");
   });

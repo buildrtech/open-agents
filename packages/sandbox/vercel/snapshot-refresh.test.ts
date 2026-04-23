@@ -137,6 +137,45 @@ describe("refreshBaseSnapshot", () => {
     ]);
   });
 
+  test("creates a new snapshot from the default runtime when no base snapshot is provided", async () => {
+    const connectCalls: SandboxConnectConfig[] = [];
+    const logs: string[] = [];
+
+    const result = await refreshBaseSnapshot(
+      {
+        sandboxTimeoutMs: 300_000,
+        log: (message) => logs.push(message),
+      },
+      {
+        connectSandbox: async (config) => {
+          connectCalls.push(config);
+          return createSandbox();
+        },
+      },
+    );
+
+    expect(connectCalls).toEqual([
+      {
+        state: { type: "vercel" },
+        options: {
+          timeout: 300_000,
+          persistent: false,
+          skipGitWorkspaceBootstrap: true,
+        },
+      },
+    ]);
+    expect(result).toEqual({
+      sourceSnapshotId: null,
+      snapshotId: "snap-next",
+      commandResults: [],
+    });
+    expect(logs).toEqual([
+      "Creating sandbox from the default runtime.",
+      "Creating snapshot from prepared sandbox.",
+      "Created snapshot snap-next.",
+    ]);
+  });
+
   test("writes staged files before running setup commands", async () => {
     const writes: Array<{
       path: string;

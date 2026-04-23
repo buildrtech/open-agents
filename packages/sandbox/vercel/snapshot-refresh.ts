@@ -21,7 +21,7 @@ export interface RefreshBaseSnapshotStagedFile {
 }
 
 export interface RefreshBaseSnapshotOptions {
-  baseSnapshotId: string;
+  baseSnapshotId?: string;
   stagedFiles?: RefreshBaseSnapshotStagedFile[];
   commands?: string[];
   sandboxTimeoutMs: number;
@@ -40,7 +40,7 @@ export interface RefreshBaseSnapshotCommandResult {
 }
 
 export interface RefreshBaseSnapshotResult {
-  sourceSnapshotId: string;
+  sourceSnapshotId: string | null;
   snapshotId: string;
   commandResults: RefreshBaseSnapshotCommandResult[];
 }
@@ -92,16 +92,23 @@ export async function refreshBaseSnapshot(
   let snapshotCreated = false;
 
   try {
-    log(`Creating sandbox from base snapshot ${options.baseSnapshotId}.`);
+    if (options.baseSnapshotId) {
+      log(`Creating sandbox from base snapshot ${options.baseSnapshotId}.`);
+    } else {
+      log("Creating sandbox from the default runtime.");
+    }
+
     // Skip git init so the new base image does not ship `.git` in /vercel/sandbox
     // (would break `git clone … .` for agent sandboxes).
     sandbox = await connectSnapshotSandbox({
       state: { type: "vercel" },
       options: {
-        baseSnapshotId: options.baseSnapshotId,
         timeout: options.sandboxTimeoutMs,
         persistent: false,
         skipGitWorkspaceBootstrap: true,
+        ...(options.baseSnapshotId !== undefined && {
+          baseSnapshotId: options.baseSnapshotId,
+        }),
         ...(options.ports !== undefined && { ports: options.ports }),
         ...(options.env !== undefined && { env: options.env }),
       },
@@ -148,7 +155,7 @@ export async function refreshBaseSnapshot(
     log(`Created snapshot ${snapshot.snapshotId}.`);
 
     return {
-      sourceSnapshotId: options.baseSnapshotId,
+      sourceSnapshotId: options.baseSnapshotId ?? null,
       snapshotId: snapshot.snapshotId,
       commandResults,
     };
