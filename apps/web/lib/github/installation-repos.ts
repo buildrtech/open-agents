@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { filterAllowedRepositories } from "@/lib/repo-allowlist";
 
 const INSTALLATION_REPOS_MAX_PAGES = 20;
 
@@ -139,9 +140,11 @@ export async function listUserInstallationRepositories({
     }
   }
 
-  matchedRepos.sort(compareRepositoriesByRecentActivity);
+  const allowedMatchedRepos = filterAllowedRepositories(matchedRepos);
 
-  return matchedRepos.slice(0, normalizedLimit).map((repo) => ({
+  allowedMatchedRepos.sort(compareRepositoriesByRecentActivity);
+
+  return allowedMatchedRepos.slice(0, normalizedLimit).map((repo) => ({
     name: repo.name,
     full_name: repo.full_name,
     description: repo.description,

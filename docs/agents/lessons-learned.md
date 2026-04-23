@@ -97,6 +97,7 @@ Hard-won knowledge from building this codebase. When you make a mistake or disco
 
 ## GitHub App / PR Flows
 
+- Repo launch allowlists must validate both explicit `repoOwner`/`repoName` and `cloneUrl`-derived coordinates in `POST /api/sessions`; that route can be called with only `cloneUrl`, so checking only owner/name leaves a repo-launch bypass.
 - GitHub App install flow uses a three-path strategy: (1) no linked account -- OAuth authorize URL with explicit `redirect_uri`, callback chains to install with `target_id`; (2) linked account but no installations -- `installations/new/permissions?target_id={githubId}` directly; (3) linked account with installations -- `select_target` for the account/org picker. Disable "Request user authorization (OAuth) during installation" on the GitHub App -- it causes auto-redirect loops for already-authorized users on both `select_target` and `installations/new/permissions`.
 - GitHub App must be made **public** for the org picker to appear during installation. While the app is private, `/installations/select_target` only shows the owner's personal account -- users cannot install on organizations. Use "Make public" in the GitHub App's Danger Zone when ready.
 - Use `/installations/select_target` instead of `/installations/new` for the GitHub App install URL; the latter silently redirects to an existing personal installation's settings page instead of showing the account/org picker.

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test";
+import { REPOSITORY_LAUNCH_ALLOWLIST_ERROR } from "@/lib/repo-allowlist";
 import { DEFAULT_SANDBOX_TIMEOUT_MS } from "@/lib/sandbox/config";
 
 mock.module("server-only", () => ({}));
@@ -105,6 +106,7 @@ mock.module("@/lib/vercel/projects", () => ({
 
 mock.module("@/lib/db/sessions", () => ({
   getChatsBySessionId: async () => [],
+  getChatById: async () => null,
   getSessionById: async () => sessionRecord,
   updateSession: async (sessionId: string, patch: Record<string, unknown>) => {
     updateCalls.push({ sessionId, patch });
@@ -119,6 +121,17 @@ mock.module("@/lib/sandbox/lifecycle-kick", () => ({
   kickSandboxLifecycleWorkflow: (input: KickCall) => {
     kickCalls.push(input);
   },
+}));
+
+mock.module("@/lib/sandbox/lifecycle", () => ({
+  buildActiveLifecycleUpdate: () => ({
+    lifecycleState: "active",
+    lifecycleError: null,
+    lastActivityAt: new Date(),
+    hibernateAfter: new Date(Date.now() + 60_000),
+  }),
+  getNextLifecycleVersion: (currentVersion: number | null | undefined) =>
+    (currentVersion ?? 0) + 1,
 }));
 
 mock.module("@open-agents/sandbox", () => ({
@@ -244,7 +257,7 @@ describe("/api/sandbox lifecycle kicks", () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          repoUrl: "https://github.com/acme/private-repo",
+          repoUrl: "https://github.com/buildrtech/app",
           branch: "main",
           sandboxType: "vercel",
         }),
@@ -256,7 +269,7 @@ describe("/api/sandbox lifecycle kicks", () => {
       state: {
         type: "vercel",
         source: {
-          repo: "https://github.com/acme/private-repo",
+          repo: "https://github.com/buildrtech/app",
           branch: "main",
         },
       },
@@ -265,6 +278,32 @@ describe("/api/sandbox lifecycle kicks", () => {
       },
     });
     expect(connectConfigs[0]?.state.source).not.toHaveProperty("token");
+  });
+
+  test("rejects repo sandboxes for blocked repos", async () => {
+    const { POST } = await routeModulePromise;
+
+    currentGitHubToken = "github-user-token";
+    sessionRecord.vercelProjectId = null;
+    sessionRecord.vercelProjectName = null;
+    sessionRecord.vercelTeamId = null;
+
+    const response = await POST(
+      new Request("http://localhost/api/sandbox", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          repoUrl: "https://github.com/acme/repo",
+          branch: "main",
+          sandboxType: "vercel",
+        }),
+      }),
+    );
+    const body = (await response.json()) as { error: string };
+
+    expect(response.status).toBe(403);
+    expect(body.error).toBe(REPOSITORY_LAUNCH_ALLOWLIST_ERROR);
+    expect(connectConfigs).toHaveLength(0);
   });
 
   test("new vercel sandbox does not sync linked Development env vars while code is commented out", async () => {

@@ -12,10 +12,15 @@ import {
 } from "@/lib/db/vercel-project-links";
 import { getUserPreferences } from "@/lib/db/user-preferences";
 import { sanitizeUserPreferencesForSession } from "@/lib/model-access";
+import { parseGitHubUrl } from "@/lib/github/client";
 import {
   isValidGitHubRepoName,
   isValidGitHubRepoOwner,
 } from "@/lib/github/repo-identifiers";
+import {
+  isRepositoryAllowed,
+  REPOSITORY_LAUNCH_ALLOWLIST_ERROR,
+} from "@/lib/repo-allowlist";
 import { getRandomCityName } from "@/lib/random-city";
 import { getServerSession } from "@/lib/session/get-server-session";
 import {
@@ -229,6 +234,23 @@ export async function POST(req: Request) {
     (typeof body.repoName !== "string" || !isValidGitHubRepoName(body.repoName))
   ) {
     return Response.json({ error: "Invalid repository name" }, { status: 400 });
+  }
+
+  const requestedRepository =
+    body.repoOwner && body.repoName
+      ? { owner: body.repoOwner, repo: body.repoName }
+      : body.cloneUrl
+        ? parseGitHubUrl(body.cloneUrl)
+        : null;
+
+  if (
+    requestedRepository &&
+    !isRepositoryAllowed(requestedRepository.owner, requestedRepository.repo)
+  ) {
+    return Response.json(
+      { error: REPOSITORY_LAUNCH_ALLOWLIST_ERROR },
+      { status: 403 },
+    );
   }
 
   let explicitVercelProject: VercelProjectSelection | null | undefined;

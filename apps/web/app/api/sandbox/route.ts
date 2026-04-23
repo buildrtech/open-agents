@@ -10,6 +10,10 @@ import { getGitHubUserProfile, getUserGitHubToken } from "@/lib/github/token";
 import { updateSession } from "@/lib/db/sessions";
 import { parseGitHubUrl } from "@/lib/github/client";
 import {
+  isRepositoryAllowed,
+  REPOSITORY_LAUNCH_ALLOWLIST_ERROR,
+} from "@/lib/repo-allowlist";
+import {
   DEFAULT_SANDBOX_BASE_SNAPSHOT_ID,
   DEFAULT_SANDBOX_PORTS,
   DEFAULT_SANDBOX_TIMEOUT_MS,
@@ -116,6 +120,13 @@ export async function POST(req: Request) {
       return Response.json(
         { error: "Invalid GitHub repository URL" },
         { status: 400 },
+      );
+    }
+
+    if (!isRepositoryAllowed(parsedRepo.owner, parsedRepo.repo)) {
+      return Response.json(
+        { error: REPOSITORY_LAUNCH_ALLOWLIST_ERROR },
+        { status: 403 },
       );
     }
 

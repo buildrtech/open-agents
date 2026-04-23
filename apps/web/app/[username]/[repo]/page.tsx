@@ -10,6 +10,7 @@ import { getUserPreferences } from "@/lib/db/user-preferences";
 import { getUserGitHubToken } from "@/lib/github/token";
 import { sanitizeUserPreferencesForSession } from "@/lib/model-access";
 import { getRandomCityName } from "@/lib/random-city";
+import { isRepositoryAllowed } from "@/lib/repo-allowlist";
 import { getServerSession } from "@/lib/session/get-server-session";
 
 interface RepoPageProps {
@@ -55,6 +56,10 @@ export default async function RepoPage({ params }: RepoPageProps) {
   const session = await getServerSession();
   if (!session?.user) {
     redirect("/");
+  }
+
+  if (!isRepositoryAllowed(username, repo)) {
+    notFound();
   }
 
   const preferencesPromise = getUserPreferences(session.user.id);

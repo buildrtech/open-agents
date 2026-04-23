@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test";
 import { APP_DEFAULT_MODEL_ID } from "@/lib/models";
+import { REPOSITORY_LAUNCH_ALLOWLIST_ERROR } from "@/lib/repo-allowlist";
 import type { VercelProjectSelection } from "@/lib/vercel/types";
+
+const ALLOWED_REPO_OWNER = "buildrtech";
+const ALLOWED_REPO_NAME = "app";
+const ALLOWED_CLONE_URL = "https://github.com/buildrtech/app";
 
 let currentSession: {
   authProvider?: "vercel" | "github";
@@ -139,9 +144,9 @@ describe("/api/sessions POST vercel project linking", () => {
       createJsonRequest(
         {
           branch: "main",
-          cloneUrl: "https://github.com/vercel-labs/open-agents",
-          repoOwner: "vercel-labs",
-          repoName: "open-agents",
+          cloneUrl: ALLOWED_CLONE_URL,
+          repoOwner: ALLOWED_REPO_OWNER,
+          repoName: ALLOWED_REPO_NAME,
         },
         "https://open-agents.dev/api/sessions",
       ),
@@ -161,9 +166,9 @@ describe("/api/sessions POST vercel project linking", () => {
     const response = await POST(
       createJsonRequest({
         branch: "main",
-        cloneUrl: "https://github.com/vercel-labs/open-agents",
-        repoOwner: "vercel-labs",
-        repoName: "open-agents",
+        cloneUrl: ALLOWED_CLONE_URL,
+        repoOwner: ALLOWED_REPO_OWNER,
+        repoName: ALLOWED_REPO_NAME,
       }),
     );
     const body = (await response.json()) as {
@@ -196,10 +201,10 @@ describe("/api/sessions POST vercel project linking", () => {
 
     const response = await POST(
       createJsonRequest({
-        repoOwner: "Vercel",
-        repoName: "Open-Harness",
+        repoOwner: "BuildrTech",
+        repoName: "App",
         branch: "main",
-        cloneUrl: "https://github.com/Vercel/Open-Harness",
+        cloneUrl: "https://github.com/BuildrTech/App",
         vercelProject,
       }),
     );
@@ -211,14 +216,14 @@ describe("/api/sessions POST vercel project linking", () => {
     expect(upsertCalls).toEqual([
       {
         userId: "user-1",
-        repoOwner: "Vercel",
-        repoName: "Open-Harness",
+        repoOwner: "BuildrTech",
+        repoName: "App",
         project: matchingProjects[0],
       },
     ]);
     expect(createCalls[0]).toMatchObject({
-      repoOwner: "Vercel",
-      repoName: "Open-Harness",
+      repoOwner: "BuildrTech",
+      repoName: "App",
       vercelProjectId: "project-1",
       vercelProjectName: "app",
       vercelTeamId: "team-1",
@@ -242,10 +247,10 @@ describe("/api/sessions POST vercel project linking", () => {
 
     const response = await POST(
       createJsonRequest({
-        repoOwner: "vercel",
-        repoName: "open-agents",
+        repoOwner: ALLOWED_REPO_OWNER,
+        repoName: ALLOWED_REPO_NAME,
         branch: "main",
-        cloneUrl: "https://github.com/vercel/open-agents",
+        cloneUrl: ALLOWED_CLONE_URL,
         vercelProject: {
           projectId: "project-999",
           projectName: "rogue-project",
@@ -276,10 +281,10 @@ describe("/api/sessions POST vercel project linking", () => {
 
     const response = await POST(
       createJsonRequest({
-        repoOwner: "vercel",
-        repoName: "open-agents",
+        repoOwner: ALLOWED_REPO_OWNER,
+        repoName: ALLOWED_REPO_NAME,
         branch: "main",
-        cloneUrl: "https://github.com/vercel/open-agents",
+        cloneUrl: ALLOWED_CLONE_URL,
       }),
     );
     const body = (await response.json()) as {
@@ -309,10 +314,10 @@ describe("/api/sessions POST vercel project linking", () => {
 
     const response = await POST(
       createJsonRequest({
-        repoOwner: "vercel",
-        repoName: "open-agents",
+        repoOwner: ALLOWED_REPO_OWNER,
+        repoName: ALLOWED_REPO_NAME,
         branch: "main",
-        cloneUrl: "https://github.com/vercel/open-agents",
+        cloneUrl: ALLOWED_CLONE_URL,
         vercelProject: null,
       }),
     );
@@ -336,10 +341,10 @@ describe("/api/sessions POST vercel project linking", () => {
 
     const response = await POST(
       createJsonRequest({
-        repoOwner: "vercel",
-        repoName: "open-agents",
+        repoOwner: ALLOWED_REPO_OWNER,
+        repoName: ALLOWED_REPO_NAME,
         branch: "main",
-        cloneUrl: "https://github.com/vercel/open-agents",
+        cloneUrl: ALLOWED_CLONE_URL,
       }),
     );
 
@@ -355,9 +360,9 @@ describe("/api/sessions POST vercel project linking", () => {
     const response = await POST(
       createJsonRequest({
         repoOwner: 'vercel" && echo nope && "',
-        repoName: "open-agents",
+        repoName: ALLOWED_REPO_NAME,
         branch: "main",
-        cloneUrl: "https://github.com/vercel/open-agents",
+        cloneUrl: ALLOWED_CLONE_URL,
       }),
     );
     const body = (await response.json()) as { error: string };
@@ -367,15 +372,49 @@ describe("/api/sessions POST vercel project linking", () => {
     expect(createCalls).toHaveLength(0);
   });
 
+  test("rejects repo-backed sessions for blocked repos", async () => {
+    const { POST } = await routeModulePromise;
+
+    const response = await POST(
+      createJsonRequest({
+        repoOwner: "acme",
+        repoName: "repo",
+        branch: "main",
+        cloneUrl: "https://github.com/acme/repo",
+      }),
+    );
+    const body = (await response.json()) as { error: string };
+
+    expect(response.status).toBe(403);
+    expect(body.error).toBe(REPOSITORY_LAUNCH_ALLOWLIST_ERROR);
+    expect(createCalls).toHaveLength(0);
+  });
+
+  test("rejects blocked cloneUrl requests even when owner and repo are omitted", async () => {
+    const { POST } = await routeModulePromise;
+
+    const response = await POST(
+      createJsonRequest({
+        cloneUrl: "https://github.com/acme/repo",
+        branch: "main",
+      }),
+    );
+    const body = (await response.json()) as { error: string };
+
+    expect(response.status).toBe(403);
+    expect(body.error).toBe(REPOSITORY_LAUNCH_ALLOWLIST_ERROR);
+    expect(createCalls).toHaveLength(0);
+  });
+
   test("persists autoCreatePr when autoCommitPush is enabled", async () => {
     const { POST } = await routeModulePromise;
 
     const response = await POST(
       createJsonRequest({
-        repoOwner: "vercel",
-        repoName: "open-agents",
+        repoOwner: ALLOWED_REPO_OWNER,
+        repoName: ALLOWED_REPO_NAME,
         branch: "feature/auto-pr",
-        cloneUrl: "https://github.com/vercel/open-agents",
+        cloneUrl: ALLOWED_CLONE_URL,
         autoCommitPush: true,
         autoCreatePr: true,
       }),

@@ -4,17 +4,21 @@ import { listUserInstallationRepositories } from "./installation-repos";
 
 const originalFetch = globalThis.fetch;
 
-function createRepository(name: string, updatedAt: string) {
+function createRepository(
+  name: string,
+  updatedAt: string,
+  ownerLogin = "acme",
+) {
   return {
     name,
-    full_name: `acme/${name}`,
+    full_name: `${ownerLogin}/${name}`,
     description: null,
     private: false,
-    clone_url: `https://github.com/acme/${name}.git`,
+    clone_url: `https://github.com/${ownerLogin}/${name}.git`,
     updated_at: updatedAt,
     language: null,
     owner: {
-      login: "acme",
+      login: ownerLogin,
     },
   };
 }
@@ -54,9 +58,9 @@ describe("installation-repos", () => {
         return Response.json({
           repositories: createPage(
             [
-              createRepository("zeta", "2024-01-01T00:00:00Z"),
-              createRepository("alpha", "2024-03-01T00:00:00Z"),
-              createRepository("beta", "2024-02-01T00:00:00Z"),
+              createRepository("app", "2024-03-01T00:00:00Z", "buildrtech"),
+              createRepository("repo", "2024-02-01T00:00:00Z", "buildrtech"),
+              createRepository("zeta", "2024-01-01T00:00:00Z", "buildrtech"),
             ],
             1,
           ),
@@ -64,7 +68,9 @@ describe("installation-repos", () => {
       }
 
       return Response.json({
-        repositories: [createRepository("omega", "2024-04-01T00:00:00Z")],
+        repositories: [
+          createRepository("omega", "2024-04-01T00:00:00Z", "buildrtech"),
+        ],
       });
     });
 
@@ -73,11 +79,11 @@ describe("installation-repos", () => {
     const repos = await listUserInstallationRepositories({
       installationId: 123,
       userToken: "token",
-      owner: "acme",
-      limit: 2,
+      owner: "buildrtech",
+      limit: 1,
     });
 
-    expect(repos.map((repo) => repo.name)).toEqual(["alpha", "beta"]);
+    expect(repos.map((repo) => repo.name)).toEqual(["app"]);
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
@@ -92,8 +98,12 @@ describe("installation-repos", () => {
         return Response.json({
           repositories: createPage(
             [
-              createRepository("docs", "2024-01-01T00:00:00Z"),
-              createRepository("frontend", "2024-02-01T00:00:00Z"),
+              createRepository("docs", "2024-01-01T00:00:00Z", "buildrtech"),
+              createRepository(
+                "frontend",
+                "2024-02-01T00:00:00Z",
+                "buildrtech",
+              ),
             ],
             1,
           ),
@@ -104,8 +114,8 @@ describe("installation-repos", () => {
         return Response.json({
           repositories: createPage(
             [
-              createRepository("docs-site", "2024-03-01T00:00:00Z"),
-              createRepository("infra", "2024-04-01T00:00:00Z"),
+              createRepository("app", "2024-03-01T00:00:00Z", "buildrtech"),
+              createRepository("infra", "2024-04-01T00:00:00Z", "buildrtech"),
             ],
             2,
           ),
@@ -113,7 +123,9 @@ describe("installation-repos", () => {
       }
 
       return Response.json({
-        repositories: [createRepository("docs-api", "2024-05-01T00:00:00Z")],
+        repositories: [
+          createRepository("docs-api", "2024-05-01T00:00:00Z", "buildrtech"),
+        ],
       });
     });
 
@@ -122,12 +134,33 @@ describe("installation-repos", () => {
     const repos = await listUserInstallationRepositories({
       installationId: 123,
       userToken: "token",
-      owner: "acme",
-      query: "docs",
-      limit: 2,
+      owner: "buildrtech",
+      query: "app",
+      limit: 1,
     });
 
-    expect(repos.map((repo) => repo.name)).toEqual(["docs-site", "docs"]);
+    expect(repos.map((repo) => repo.name)).toEqual(["app"]);
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  test("omits repositories outside the launch allowlist", async () => {
+    const fetchMock = mock(async () =>
+      Response.json({
+        repositories: [
+          createRepository("app", "2024-05-01T00:00:00Z", "buildrtech"),
+          createRepository("repo", "2024-04-01T00:00:00Z", "buildrtech"),
+        ],
+      }),
+    );
+
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const repos = await listUserInstallationRepositories({
+      installationId: 123,
+      userToken: "token",
+      owner: "buildrtech",
+    });
+
+    expect(repos.map((repo) => repo.full_name)).toEqual(["buildrtech/app"]);
   });
 });
