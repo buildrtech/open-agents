@@ -17,6 +17,8 @@ const BUILDR_APP_INSTALL_INPUTS = [
 
 const BUILDR_APP_LOCAL_GEM_DIRECTORIES = ["gems/email_forward_parser"] as const;
 
+const BUILDR_APP_BDEV_DIRECTORY = "packages/bdev";
+
 const BUILDR_APP_BUILD_PACKAGES = [
   "diffutils",
   "gcc",
@@ -100,6 +102,13 @@ const BUILDR_APP_LIBREOFFICE_DOWNLOAD_PATH = `/tmp/${BUILDR_APP_LIBREOFFICE_ARCH
 const BUILDR_APP_LIBREOFFICE_DOWNLOAD_URL = `https://download.documentfoundation.org/libreoffice/stable/${BUILDR_APP_LIBREOFFICE_VERSION}/rpm/x86_64/${BUILDR_APP_LIBREOFFICE_ARCHIVE_NAME}`;
 const BUILDR_APP_LIBREOFFICE_SHA256 =
   "c510b6a83e14125fb079cd2fb5510eaf01464bd4956443a73a5f5fff23cfb911";
+const BUILDR_APP_MEILISEARCH_VERSION = "1.16.0";
+const BUILDR_APP_MEILISEARCH_BINARY_NAME = "meilisearch-linux-amd64";
+const BUILDR_APP_MEILISEARCH_DOWNLOAD_PATH = `/tmp/${BUILDR_APP_MEILISEARCH_BINARY_NAME}`;
+const BUILDR_APP_MEILISEARCH_DOWNLOAD_URL = `https://github.com/meilisearch/meilisearch/releases/download/v${BUILDR_APP_MEILISEARCH_VERSION}/${BUILDR_APP_MEILISEARCH_BINARY_NAME}`;
+const BUILDR_APP_MEILISEARCH_SHA256 =
+  "9f2f892ef999d8bcabfa87517c22c53c8f6e74a034fa9678f868b0d3f45fedcc";
+const BUILDR_APP_BDEV_BINARY_BUILD_PATH = "/tmp/bdev";
 const BUILDR_APP_RUBY_BIN_DIRECTORY = `${BUILDR_APP_MISE_INSTALLS_DIRECTORY}/ruby/${BUILDR_APP_RUBY_VERSION}/bin`;
 const BUILDR_APP_NODE_BIN_DIRECTORY = `${BUILDR_APP_MISE_INSTALLS_DIRECTORY}/node/${BUILDR_APP_NODE_VERSION}/bin`;
 const BUILDR_APP_GO_BIN_DIRECTORY = `${BUILDR_APP_MISE_INSTALLS_DIRECTORY}/go/${BUILDR_APP_GO_VERSION}/bin`;
@@ -158,6 +167,19 @@ function shouldStageLocalGemFile(relativePath: string): boolean {
   );
 }
 
+function shouldStageBdevFile(relativePath: string): boolean {
+  if (!relativePath.startsWith(`${BUILDR_APP_BDEV_DIRECTORY}/`)) {
+    return false;
+  }
+
+  return (
+    relativePath.endsWith(".md") ||
+    relativePath.endsWith("go.mod") ||
+    relativePath.endsWith("go.sum") ||
+    (relativePath.endsWith(".go") && !relativePath.endsWith("_test.go"))
+  );
+}
+
 function toSnapshotPath(relativePath: string): string {
   return path.posix.join(
     BUILDR_APP_SNAPSHOT_CONTEXT_ROOT,
@@ -202,6 +224,20 @@ export async function collectBuildrAppSnapshotInputs(
         await stageRelativeFile(options.appRoot, relativePath, readTextFile),
       );
     }
+  }
+
+  const bdevFiles = await listFiles(
+    path.join(options.appRoot, BUILDR_APP_BDEV_DIRECTORY),
+  );
+  const bdevRelativePaths = bdevFiles
+    .map((filePath) => normalizeRelativePath(filePath, options.appRoot))
+    .filter((relativePath) => shouldStageBdevFile(relativePath))
+    .sort();
+
+  for (const relativePath of bdevRelativePaths) {
+    stagedFiles.push(
+      await stageRelativeFile(options.appRoot, relativePath, readTextFile),
+    );
   }
 
   return { stagedFiles };
@@ -265,7 +301,15 @@ export function buildBuildrAppSnapshotCommands(): string[] {
     `python3 -c "import zipfile; zipfile.ZipFile('${BUILDR_APP_AST_GREP_DOWNLOAD_PATH}').extract('ast-grep', '/tmp')"`,
     `sudo install -m 0755 ${BUILDR_APP_AST_GREP_EXTRACTED_PATH} /usr/local/bin/ast-grep`,
     `rm -f ${BUILDR_APP_AST_GREP_DOWNLOAD_PATH} ${BUILDR_APP_AST_GREP_EXTRACTED_PATH}`,
-    'for tool in go pg_config psql createdb dropdb pg_ctl redis-server exiftool soffice; do command -v "$tool" >/dev/null || exit 1; done',
+    `cd ${BUILDR_APP_SNAPSHOT_CONTEXT_ROOT}/${BUILDR_APP_BDEV_DIRECTORY} && go build -o ${BUILDR_APP_BDEV_BINARY_BUILD_PATH} .`,
+    `sudo install -m 0755 ${BUILDR_APP_BDEV_BINARY_BUILD_PATH} /usr/local/bin/bdev`,
+    `rm -f ${BUILDR_APP_BDEV_BINARY_BUILD_PATH}`,
+    `curl -fsSL -o ${BUILDR_APP_MEILISEARCH_DOWNLOAD_PATH} ${BUILDR_APP_MEILISEARCH_DOWNLOAD_URL}`,
+    `echo "${BUILDR_APP_MEILISEARCH_SHA256}  ${BUILDR_APP_MEILISEARCH_DOWNLOAD_PATH}" | sha256sum -c -`,
+    `sudo install -m 0755 ${BUILDR_APP_MEILISEARCH_DOWNLOAD_PATH} /usr/local/bin/meilisearch`,
+    `rm -f ${BUILDR_APP_MEILISEARCH_DOWNLOAD_PATH}`,
+    "meilisearch --version",
+    'for tool in go bdev meilisearch pg_config psql createdb dropdb pg_ctl redis-server exiftool soffice; do command -v "$tool" >/dev/null || exit 1; done',
     `install -d ${BUILDR_APP_RUNTIME_HOME}/.bundle ${BUILDR_APP_RUNTIME_HOME}/.local/share/pnpm/store`,
     `cd ${BUILDR_APP_SNAPSHOT_CONTEXT_ROOT} && /usr/local/bin/bundle install --jobs 1 --retry 3`,
     `cd ${BUILDR_APP_SNAPSHOT_CONTEXT_ROOT} && /usr/local/bin/pnpm install --frozen-lockfile --store-dir ${BUILDR_APP_RUNTIME_HOME}/.local/share/pnpm/store`,

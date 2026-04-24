@@ -12,7 +12,20 @@ describe("collectBuildrAppSnapshotInputs", () => {
       readTextFile: async (path) => `content:${path}`,
       listFiles: async (directory) => {
         if (!directory.endsWith("gems/email_forward_parser")) {
-          return [];
+          if (!directory.endsWith("packages/bdev")) {
+            return [];
+          }
+
+          return [
+            "packages/bdev/cmd/agent_context.md",
+            "packages/bdev/cmd/root.go",
+            "packages/bdev/cmd/root_test.go",
+            "packages/bdev/go.mod",
+            "packages/bdev/go.sum",
+            "packages/bdev/internal/devenv/devenv.go",
+            "packages/bdev/internal/devenv/devenv_test.go",
+            "packages/bdev/main.go",
+          ];
         }
 
         return [
@@ -70,6 +83,30 @@ describe("collectBuildrAppSnapshotInputs", () => {
         path: `${BUILDR_APP_SNAPSHOT_CONTEXT_ROOT}/gems/email_forward_parser/lib/email_forward_parser.rb`,
         content:
           "content:../app/gems/email_forward_parser/lib/email_forward_parser.rb",
+      },
+      {
+        path: `${BUILDR_APP_SNAPSHOT_CONTEXT_ROOT}/packages/bdev/cmd/agent_context.md`,
+        content: "content:../app/packages/bdev/cmd/agent_context.md",
+      },
+      {
+        path: `${BUILDR_APP_SNAPSHOT_CONTEXT_ROOT}/packages/bdev/cmd/root.go`,
+        content: "content:../app/packages/bdev/cmd/root.go",
+      },
+      {
+        path: `${BUILDR_APP_SNAPSHOT_CONTEXT_ROOT}/packages/bdev/go.mod`,
+        content: "content:../app/packages/bdev/go.mod",
+      },
+      {
+        path: `${BUILDR_APP_SNAPSHOT_CONTEXT_ROOT}/packages/bdev/go.sum`,
+        content: "content:../app/packages/bdev/go.sum",
+      },
+      {
+        path: `${BUILDR_APP_SNAPSHOT_CONTEXT_ROOT}/packages/bdev/internal/devenv/devenv.go`,
+        content: "content:../app/packages/bdev/internal/devenv/devenv.go",
+      },
+      {
+        path: `${BUILDR_APP_SNAPSHOT_CONTEXT_ROOT}/packages/bdev/main.go`,
+        content: "content:../app/packages/bdev/main.go",
       },
     ]);
   });
@@ -167,6 +204,42 @@ describe("buildBuildrAppSnapshotCommands", () => {
     ).toBe(true);
     expect(
       commands.some((command) =>
+        command.includes(
+          `cd ${BUILDR_APP_SNAPSHOT_CONTEXT_ROOT}/packages/bdev && go build -o /tmp/bdev .`,
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      commands.some((command) =>
+        command.includes("sudo install -m 0755 /tmp/bdev /usr/local/bin/bdev"),
+      ),
+    ).toBe(true);
+    expect(
+      commands.some((command) =>
+        command.includes(
+          "https://github.com/meilisearch/meilisearch/releases/download/v1.16.0/meilisearch-linux-amd64",
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      commands.some((command) =>
+        command.includes(
+          "9f2f892ef999d8bcabfa87517c22c53c8f6e74a034fa9678f868b0d3f45fedcc",
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      commands.some((command) =>
+        command.includes(
+          "sudo install -m 0755 /tmp/meilisearch-linux-amd64 /usr/local/bin/meilisearch",
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      commands.some((command) => command.includes("meilisearch --version")),
+    ).toBe(true);
+    expect(
+      commands.some((command) =>
         command.includes("corepack install --global pnpm@10.28.2"),
       ),
     ).toBe(true);
@@ -185,7 +258,7 @@ describe("buildBuildrAppSnapshotCommands", () => {
     expect(
       commands.some((command) =>
         command.includes(
-          'for tool in go pg_config psql createdb dropdb pg_ctl redis-server exiftool soffice; do command -v "$tool" >/dev/null || exit 1',
+          'for tool in go bdev meilisearch pg_config psql createdb dropdb pg_ctl redis-server exiftool soffice; do command -v "$tool" >/dev/null || exit 1',
         ),
       ),
     ).toBe(true);
