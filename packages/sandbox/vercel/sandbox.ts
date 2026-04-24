@@ -1,5 +1,6 @@
 import { Sandbox as VercelSandboxSDK } from "@vercel/sandbox";
 import type { Dirent } from "fs";
+import { buildSandboxEnvFromPrefix, mergeSandboxEnv } from "../env-prefix";
 import type {
   ExecResult,
   Sandbox,
@@ -174,6 +175,7 @@ export class VercelSandbox implements Sandbox {
    */
   readonly currentBranch?: string;
   readonly hooks?: SandboxHooks;
+  private readonly envPrefix?: string;
 
   private sdk: VercelSandboxSDK;
   private session: VercelSandboxSession;
@@ -207,6 +209,7 @@ export class VercelSandbox implements Sandbox {
     id: string,
     workingDirectory: string,
     env?: Record<string, string>,
+    envPrefix?: string,
     currentBranch?: string,
     hooks?: SandboxHooks,
     timeout?: number,
@@ -219,6 +222,7 @@ export class VercelSandbox implements Sandbox {
     this.id = id;
     this.workingDirectory = workingDirectory;
     this.env = env;
+    this.envPrefix = envPrefix;
     this.currentBranch = currentBranch;
     this.hooks = hooks;
     this._ports = ports;
@@ -499,6 +503,7 @@ ${hostLine}${portLines}${runtimeEnvLine}`;
       restoreSnapshotId,
       gitUser,
       env,
+      envPrefix,
       githubToken,
       vcpus = 4,
       timeout = 300_000,
@@ -522,6 +527,11 @@ ${hostLine}${portLines}${runtimeEnvLine}`;
     // Calculate SDK timeout with buffer for beforeStop hook.
     const sdkTimeout = effectiveTimeout + TIMEOUT_BUFFER_MS;
 
+    const resolvedEnv = mergeSandboxEnv(
+      buildSandboxEnvFromPrefix(envPrefix),
+      env,
+    );
+
     const createBaseConfig = {
       ...(name ? { name } : {}),
       resources: { vcpus },
@@ -529,6 +539,7 @@ ${hostLine}${portLines}${runtimeEnvLine}`;
       runtime,
       persistent,
       networkPolicy: buildGitHubCredentialBrokeringPolicy(githubToken),
+      ...(resolvedEnv ? { env: resolvedEnv } : {}),
       ...(ports && { ports }),
       ...(snapshotExpiration !== undefined && { snapshotExpiration }),
     };
@@ -683,7 +694,8 @@ ${hostLine}${portLines}${runtimeEnvLine}`;
       sdk.name,
       session.sessionId,
       workingDirectory,
-      env,
+      resolvedEnv,
+      envPrefix,
       currentBranch,
       hooks,
       effectiveTimeout,
@@ -706,6 +718,7 @@ ${hostLine}${portLines}${runtimeEnvLine}`;
     sandboxName: string,
     options: {
       env?: Record<string, string>;
+      envPrefix?: string;
       githubToken?: string;
       hooks?: SandboxHooks;
       /**
@@ -737,13 +750,19 @@ ${hostLine}${portLines}${runtimeEnvLine}`;
         : DEFAULT_RECONNECT_TIMEOUT_MS);
     const startTime = remainingTimeout !== undefined ? Date.now() : undefined;
 
+    const resolvedEnv = mergeSandboxEnv(
+      buildSandboxEnvFromPrefix(options.envPrefix),
+      options.env,
+    );
+
     const sandbox = new VercelSandbox(
       sdk,
       session,
       sandboxName,
       session.sessionId,
       DEFAULT_WORKING_DIRECTORY,
-      options.env,
+      resolvedEnv,
+      options.envPrefix,
       undefined,
       options.hooks,
       remainingTimeout,
@@ -1089,6 +1108,7 @@ ${hostLine}${portLines}${runtimeEnvLine}`;
       type: "vercel",
       sandboxName: this.name,
       ...(this.expiresAt !== undefined ? { expiresAt: this.expiresAt } : {}),
+      ...(this.envPrefix ? { envPrefix: this.envPrefix } : {}),
     };
   }
 }
@@ -1131,6 +1151,7 @@ export async function connectVercelSandbox(
   if (sandboxName) {
     return VercelSandbox.connect(sandboxName, {
       env: connectConfig.env,
+      envPrefix: connectConfig.envPrefix,
       githubToken: connectConfig.githubToken,
       hooks: connectConfig.hooks,
       remainingTimeout: connectConfig.remainingTimeout,

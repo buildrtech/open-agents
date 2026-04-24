@@ -18,4 +18,9 @@ export interface VercelState {
   snapshotId?: string;
   /** Timestamp (ms) when the current runtime session expires */
   expiresAt?: number;
+  /**
+   * Non-secret env namespace prefix used to resolve sandbox runtime env values
+   * from the host process on each connection.
+   */
+  envPrefix?: string;
 }

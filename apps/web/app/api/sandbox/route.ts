@@ -10,6 +10,7 @@ import { getGitHubUserProfile, getUserGitHubToken } from "@/lib/github/token";
 import { updateSession } from "@/lib/db/sessions";
 import { parseGitHubUrl } from "@/lib/github/client";
 import {
+  getRepositoryEnvPrefix,
   isRepositoryAllowed,
   REPOSITORY_LAUNCH_ALLOWLIST_ERROR,
 } from "@/lib/repo-allowlist";
@@ -114,8 +115,9 @@ export async function POST(req: Request) {
 
   const githubToken = await getUserGitHubToken(session.user.id);
 
+  let parsedRepo: ReturnType<typeof parseGitHubUrl> = null;
   if (repoUrl) {
-    const parsedRepo = parseGitHubUrl(repoUrl);
+    parsedRepo = parseGitHubUrl(repoUrl);
     if (!parsedRepo) {
       return Response.json(
         { error: "Invalid GitHub repository URL" },
@@ -179,11 +181,15 @@ export async function POST(req: Request) {
         newBranch: isNewBranch ? branch : undefined,
       }
     : undefined;
+  const envPrefix = parsedRepo
+    ? getRepositoryEnvPrefix(parsedRepo.owner, parsedRepo.repo)
+    : null;
 
   const sandbox = await connectSandbox({
     state: {
       type: "vercel",
       ...(sandboxName ? { sandboxName } : {}),
+      ...(envPrefix ? { envPrefix } : {}),
       source,
     },
     options: {

@@ -34,6 +34,7 @@ interface ConnectConfig {
   state: {
     type: "vercel";
     sandboxName?: string;
+    envPrefix?: string;
     source?: {
       repo?: string;
       branch?: string;
@@ -48,6 +49,7 @@ interface ConnectConfig {
     persistent?: boolean;
     resume?: boolean;
     createIfMissing?: boolean;
+    env?: Record<string, string>;
   };
 }
 
@@ -144,6 +146,9 @@ mock.module("@open-agents/sandbox", () => ({
       getState: () => ({
         type: "vercel" as const,
         sandboxName: config.state.sandboxName ?? "session_session-1",
+        ...(config.state.envPrefix
+          ? { envPrefix: config.state.envPrefix }
+          : {}),
         expiresAt: Date.now() + 120_000,
       }),
       exec: async (command: string, cwd: string, timeoutMs: number) => {
@@ -178,6 +183,9 @@ const routeModulePromise = import("./route");
 
 describe("/api/sandbox lifecycle kicks", () => {
   beforeEach(() => {
+    delete process.env.BUILDRTECH_APP_RAILS_MASTER_KEY;
+    delete process.env.BUILDRTECH_APP_STRIPE_SECRET_KEY;
+    delete process.env.BUILDRTECH_APPLICATION_KEY;
     kickCalls.length = 0;
     updateCalls.length = 0;
     connectConfigs.length = 0;
@@ -259,6 +267,7 @@ describe("/api/sandbox lifecycle kicks", () => {
         body: JSON.stringify({
           repoUrl: "https://github.com/buildrtech/app",
           branch: "main",
+          sessionId: "session-1",
           sandboxType: "vercel",
         }),
       }),
@@ -278,6 +287,37 @@ describe("/api/sandbox lifecycle kicks", () => {
       },
     });
     expect(connectConfigs[0]?.state.source).not.toHaveProperty("token");
+  });
+
+  test("repo sandboxes persist the env namespace prefix without secret values", async () => {
+    const { POST } = await routeModulePromise;
+
+    currentGitHubToken = "github-user-token";
+    process.env.BUILDRTECH_APP_RAILS_MASTER_KEY = "master-key";
+    process.env.BUILDRTECH_APP_STRIPE_SECRET_KEY = "stripe-secret";
+    process.env.BUILDRTECH_APPLICATION_KEY = "wrong-boundary";
+
+    const response = await POST(
+      new Request("http://localhost/api/sandbox", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          repoUrl: "https://github.com/buildrtech/app",
+          branch: "main",
+          sessionId: "session-1",
+          sandboxType: "vercel",
+        }),
+      }),
+    );
+
+    expect(response.ok).toBe(true);
+    expect(connectConfigs[0]?.state).toMatchObject({
+      envPrefix: "BUILDRTECH_APP",
+    });
+    expect(connectConfigs[0]?.options?.env).toBeUndefined();
+    expect(updateCalls[0]?.patch.sandboxState).toMatchObject({
+      envPrefix: "BUILDRTECH_APP",
+    });
   });
 
   test("rejects repo sandboxes for blocked repos", async () => {

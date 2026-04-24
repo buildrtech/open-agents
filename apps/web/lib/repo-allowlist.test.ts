@@ -3,6 +3,7 @@ import {
   ALLOWED_REPOSITORY_FULL_NAMES,
   REPOSITORY_LAUNCH_ALLOWLIST_ERROR,
   filterAllowedRepositories,
+  getRepositoryEnvPrefix,
   isRepositoryAllowed,
   normalizeRepositoryFullName,
 } from "./repo-allowlist";
@@ -21,6 +22,12 @@ describe("repo allowlist", () => {
     expect(normalizeRepositoryFullName("BuildrTech", "App")).toBe(
       "buildrtech/app",
     );
+  });
+
+  test("provides explicit env prefixes for allowlisted repos", () => {
+    expect(getRepositoryEnvPrefix("buildrtech", "app")).toBe("BUILDRTECH_APP");
+    expect(getRepositoryEnvPrefix("BuildrTech", "App")).toBe("BUILDRTECH_APP");
+    expect(getRepositoryEnvPrefix("acme", "repo")).toBeNull();
   });
 
   test("filters repository lists through the allowlist", () => {

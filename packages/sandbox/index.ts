@@ -12,6 +12,8 @@ export type {
 // shared types
 export type { Source, FileEntry, SandboxStatus } from "./types";
 
+export { buildSandboxEnvFromPrefix } from "./env-prefix";
+
 // factory
 export {
   connectSandbox,

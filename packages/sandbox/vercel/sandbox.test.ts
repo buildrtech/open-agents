@@ -170,6 +170,8 @@ beforeEach(() => {
   });
   lastRunCommandEnv = undefined;
   currentSessionStateFactory = () => ({});
+  delete process.env.BUILDRTECH_APP_RAILS_MASTER_KEY;
+  delete process.env.BUILDRTECH_APP_STRIPE_SECRET_KEY;
 });
 
 describe("VercelSandbox.environmentDetails", () => {
@@ -279,6 +281,40 @@ describe("VercelSandbox persistence", () => {
       expect.objectContaining({
         type: "vercel",
         sandboxName: "session_123",
+      }),
+    );
+  });
+
+  test("persists only the env prefix and resolves secret values for commands", async () => {
+    process.env.BUILDRTECH_APP_RAILS_MASTER_KEY = "master-key";
+    process.env.BUILDRTECH_APP_STRIPE_SECRET_KEY = "stripe-secret";
+
+    const sandbox = await sandboxModule.VercelSandbox.create({
+      name: "session_123",
+      envPrefix: "BUILDRTECH_APP",
+    });
+
+    await sandbox.exec("bin/rails test", "/vercel/sandbox", 5_000);
+
+    expect(sandbox.getState()).toEqual(
+      expect.objectContaining({
+        type: "vercel",
+        sandboxName: "session_123",
+        envPrefix: "BUILDRTECH_APP",
+      }),
+    );
+    expect(createCalls[0]).toEqual(
+      expect.objectContaining({
+        env: {
+          RAILS_MASTER_KEY: "master-key",
+          STRIPE_SECRET_KEY: "stripe-secret",
+        },
+      }),
+    );
+    expect(lastRunCommandEnv).toEqual(
+      expect.objectContaining({
+        RAILS_MASTER_KEY: "master-key",
+        STRIPE_SECRET_KEY: "stripe-secret",
       }),
     );
   });

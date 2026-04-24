@@ -43,6 +43,8 @@ export interface VercelSandboxConfig {
    * Useful for API keys and other secrets that must exist inside the sandbox.
    */
   env?: Record<string, string>;
+  /** Non-secret host env namespace prefix to resolve into sandbox env vars. */
+  envPrefix?: string;
   /** GitHub token used for credential brokering; never exposed inside the sandbox. */
   githubToken?: string;
   /**
@@ -101,6 +103,8 @@ export interface VercelSandboxConnectConfig {
   sandboxName: string;
   /** Environment variables to make available to commands */
   env?: Record<string, string>;
+  /** Non-secret host env namespace prefix to resolve into sandbox env vars. */
+  envPrefix?: string;
   /** GitHub token used for credential brokering; never exposed inside the sandbox. */
   githubToken?: string;
   /** Lifecycle hooks for setup and teardown */

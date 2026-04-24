@@ -23,6 +23,15 @@ function getLegacySandboxId(state: unknown): string | null {
   return hasNonEmptyString(sandboxId) ? sandboxId : null;
 }
 
+function getSandboxEnvPrefix(state: unknown): string | null {
+  if (!state || typeof state !== "object") {
+    return null;
+  }
+
+  const envPrefix = (state as { envPrefix?: unknown }).envPrefix;
+  return hasNonEmptyString(envPrefix) ? envPrefix : null;
+}
+
 export function getSessionSandboxName(sessionId: string): string {
   return `session_${sessionId}`;
 }
@@ -134,11 +143,13 @@ export function clearSandboxState(
 
   const sandboxName = getPersistentSandboxName(state);
   const sandboxId = sandboxName ? null : getLegacySandboxId(state);
+  const envPrefix = getSandboxEnvPrefix(state);
 
   return {
     type: state.type,
     ...(sandboxName ? { sandboxName } : {}),
     ...(sandboxId ? { sandboxId } : {}),
+    ...(envPrefix ? { envPrefix } : {}),
   } as SandboxState;
 }
 

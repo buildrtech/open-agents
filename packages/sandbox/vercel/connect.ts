@@ -1,4 +1,5 @@
 import type { Sandbox, SandboxHooks } from "../interface";
+import { buildSandboxEnvFromPrefix, mergeSandboxEnv } from "../env-prefix";
 import type { VercelSandboxConfig } from "./config";
 import { VercelSandbox } from "./sandbox";
 import type { VercelState } from "./state";
@@ -59,6 +60,10 @@ function buildCreateConfig(
   options?: ConnectOptions,
 ): VercelSandboxConfig {
   const sandboxName = getSandboxName(state);
+  const env = mergeSandboxEnv(
+    buildSandboxEnvFromPrefix(state.envPrefix),
+    options?.env,
+  );
 
   return {
     ...(sandboxName ? { name: sandboxName } : {}),
@@ -73,7 +78,8 @@ function buildCreateConfig(
         }
       : {}),
     ...(state.snapshotId ? { restoreSnapshotId: state.snapshotId } : {}),
-    env: options?.env,
+    env,
+    envPrefix: state.envPrefix,
     githubToken: options?.githubToken,
     gitUser: options?.gitUser,
     hooks: options?.hooks,
@@ -104,10 +110,15 @@ async function connectNamedSandbox(
   }
 
   const remainingTimeout = getRemainingTimeout(state.expiresAt);
+  const env = mergeSandboxEnv(
+    buildSandboxEnvFromPrefix(state.envPrefix),
+    options?.env,
+  );
 
   try {
     return await VercelSandbox.connect(sandboxName, {
-      env: options?.env,
+      env,
+      envPrefix: state.envPrefix,
       githubToken: options?.githubToken,
       hooks: options?.hooks,
       remainingTimeout,
