@@ -47,5 +47,7 @@ export const DEFAULT_SANDBOX_BASE_SNAPSHOT_ID =
   // Previous snapshot (bun + jq + agent-browser + chromium): "snap_C8tUFhwRXZky4MaFvTuwO7DH66wx"
   // Previous snapshot (bun + jq + agent-browser + chromium + code-server): "snap_EjsphVxi07bFKrfojljJdIS41KHT"
   // Previous snapshot (Buildr app bootstrap base): "snap_r7nomrMZPVPY4VlmamCoxaIfiBjQ"
-  // Current snapshot (Buildr app bootstrap base + Forge harness skills):
-  "snap_ouE2VaH0c3sCiq6I89AHucBxG3U1";
+  // Previous snapshot (Buildr app bootstrap base + Forge harness skills):
+  // "snap_ouE2VaH0c3sCiq6I89AHucBxG3U1"
+  // Current snapshot (Buildr app QA sandbox base + Forge harness skills):
+  "snap_sHSDEsz6G8L5q3NxLEccHJx0TcWL";

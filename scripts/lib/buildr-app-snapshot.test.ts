@@ -94,10 +94,27 @@ describe("buildBuildrAppSnapshotCommands", () => {
       commands.some((command) => command.includes("postgresql17-contrib")),
     ).toBe(true);
     expect(commands.some((command) => command.includes("spal-release"))).toBe(
-      true,
+      false,
     );
     expect(
-      commands.some((command) => command.includes("postgresql17-postgis")),
+      commands.some((command) => command.includes("postgresql17-server-devel")),
+    ).toBe(true);
+    expect(
+      commands.some((command) =>
+        command.includes(
+          "https://download.osgeo.org/postgis/source/postgis-3.5.6.tar.gz",
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      commands.some((command) =>
+        command.includes(
+          "./configure --with-pgconfig=/usr/bin/pg_config --without-raster --without-topology --with-gettext=no",
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      commands.some((command) => command.includes("CREATE EXTENSION postgis;")),
     ).toBe(true);
     expect(
       commands.some((command) =>
@@ -150,12 +167,37 @@ describe("buildBuildrAppSnapshotCommands", () => {
     ).toBe(true);
     expect(
       commands.some((command) =>
+        command.includes("corepack install --global pnpm@10.28.2"),
+      ),
+    ).toBe(true);
+    expect(
+      commands.some((command) =>
         command.includes(
-          'for tool in go psql createdb dropdb pg_ctl redis-server exiftool soffice; do command -v "$tool" >/dev/null || exit 1',
+          "https://github.com/ast-grep/ast-grep/releases/download/0.40.5/app-x86_64-unknown-linux-gnu.zip",
         ),
       ),
     ).toBe(true);
+    expect(
+      commands.some((command) =>
+        command.includes('python3 -c "import zipfile;'),
+      ),
+    ).toBe(true);
+    expect(
+      commands.some((command) =>
+        command.includes(
+          'for tool in go pg_config psql createdb dropdb pg_ctl redis-server exiftool soffice; do command -v "$tool" >/dev/null || exit 1',
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      commands.some((command) => command.includes("postgresql17-postgis")),
+    ).toBe(false);
     expect(commands.some((command) => command.includes("apt-get"))).toBe(false);
+    expect(
+      commands.some((command) =>
+        command.includes("npm install -g pnpm@10.28.2 @ast-grep/cli@0.40.5"),
+      ),
+    ).toBe(false);
     expect(commands.some((command) => command.includes("bundle install"))).toBe(
       true,
     );
