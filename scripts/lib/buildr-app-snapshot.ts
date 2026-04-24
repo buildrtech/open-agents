@@ -43,7 +43,7 @@ const BUILDR_APP_SERVICE_PACKAGES = [
   "postgresql17",
   "postgresql17-contrib",
   "postgresql17-server",
-  "redis6",
+  "valkey",
 ] as const;
 
 const BUILDR_APP_POSTGIS_BUILD_PACKAGES = [
@@ -59,6 +59,19 @@ const BUILDR_APP_POSTGIS_BUILD_PACKAGES = [
   "protobuf-c",
   "protobuf-c-devel",
   "protobuf-c-compiler",
+] as const;
+
+const BUILDR_APP_LIBVIPS_BUILD_PACKAGES = [
+  "expat-devel",
+  "glib2-devel",
+  "lcms2-devel",
+  "libexif-devel",
+  "libjpeg-turbo-devel",
+  "libpng-devel",
+  "libtiff-devel",
+  "libwebp-devel",
+  "meson",
+  "ninja-build",
 ] as const;
 
 const BUILDR_APP_RUNTIME_HOME = "/home/vercel-sandbox";
@@ -89,6 +102,13 @@ const BUILDR_APP_POSTGIS_SHA256 =
   "4f3e51f14c19ba5408c87ef2339eac8f3fa1cc297573dae574d9908d6d597766";
 const BUILDR_APP_POSTGIS_VERIFY_DATABASE = "buildr_snapshot_postgis_verify";
 const BUILDR_APP_POSTGIS_VERIFY_LOG_PATH = "/tmp/buildr-postgis-verify.log";
+const BUILDR_APP_LIBVIPS_VERSION = "8.17.3";
+const BUILDR_APP_LIBVIPS_ARCHIVE_NAME = `vips-${BUILDR_APP_LIBVIPS_VERSION}.tar.xz`;
+const BUILDR_APP_LIBVIPS_DOWNLOAD_PATH = `/tmp/${BUILDR_APP_LIBVIPS_ARCHIVE_NAME}`;
+const BUILDR_APP_LIBVIPS_SOURCE_DIRECTORY = `/tmp/vips-${BUILDR_APP_LIBVIPS_VERSION}`;
+const BUILDR_APP_LIBVIPS_DOWNLOAD_URL = `https://github.com/libvips/libvips/releases/download/v${BUILDR_APP_LIBVIPS_VERSION}/${BUILDR_APP_LIBVIPS_ARCHIVE_NAME}`;
+const BUILDR_APP_LIBVIPS_SHA256 =
+  "41e9a1439cd57dcc6d4435a085e2cfe181d9da1962fa84a484f09e8b536e4b77";
 const BUILDR_APP_EXIFTOOL_VERSION = "13.57";
 const BUILDR_APP_EXIFTOOL_ARCHIVE_NAME = `Image-ExifTool-${BUILDR_APP_EXIFTOOL_VERSION}.tar.gz`;
 const BUILDR_APP_EXIFTOOL_DOWNLOAD_PATH = `/tmp/${BUILDR_APP_EXIFTOOL_ARCHIVE_NAME}`;
@@ -102,12 +122,12 @@ const BUILDR_APP_LIBREOFFICE_DOWNLOAD_PATH = `/tmp/${BUILDR_APP_LIBREOFFICE_ARCH
 const BUILDR_APP_LIBREOFFICE_DOWNLOAD_URL = `https://download.documentfoundation.org/libreoffice/stable/${BUILDR_APP_LIBREOFFICE_VERSION}/rpm/x86_64/${BUILDR_APP_LIBREOFFICE_ARCHIVE_NAME}`;
 const BUILDR_APP_LIBREOFFICE_SHA256 =
   "c510b6a83e14125fb079cd2fb5510eaf01464bd4956443a73a5f5fff23cfb911";
-const BUILDR_APP_MEILISEARCH_VERSION = "1.16.0";
+const BUILDR_APP_MEILISEARCH_VERSION = "1.12.0";
 const BUILDR_APP_MEILISEARCH_BINARY_NAME = "meilisearch-linux-amd64";
 const BUILDR_APP_MEILISEARCH_DOWNLOAD_PATH = `/tmp/${BUILDR_APP_MEILISEARCH_BINARY_NAME}`;
 const BUILDR_APP_MEILISEARCH_DOWNLOAD_URL = `https://github.com/meilisearch/meilisearch/releases/download/v${BUILDR_APP_MEILISEARCH_VERSION}/${BUILDR_APP_MEILISEARCH_BINARY_NAME}`;
 const BUILDR_APP_MEILISEARCH_SHA256 =
-  "9f2f892ef999d8bcabfa87517c22c53c8f6e74a034fa9678f868b0d3f45fedcc";
+  "865a3fc222e3b3bd1f4b64346cb114b9669af691aae28d71fa68dbf39427abcf";
 const BUILDR_APP_BDEV_BINARY_BUILD_PATH = "/tmp/bdev";
 const BUILDR_APP_RUBY_BIN_DIRECTORY = `${BUILDR_APP_MISE_INSTALLS_DIRECTORY}/ruby/${BUILDR_APP_RUBY_VERSION}/bin`;
 const BUILDR_APP_NODE_BIN_DIRECTORY = `${BUILDR_APP_MISE_INSTALLS_DIRECTORY}/node/${BUILDR_APP_NODE_VERSION}/bin`;
@@ -250,11 +270,18 @@ export function buildBuildrAppSnapshotCommands(): string[] {
     `sudo dnf install -y ${BUILDR_APP_SYSTEM_PACKAGES.join(" ")}`,
     `sudo dnf install -y ${BUILDR_APP_SERVICE_PACKAGES.join(" ")}`,
     `sudo dnf install -y --allowerasing ${BUILDR_APP_POSTGIS_BUILD_PACKAGES.join(" ")}`,
+    `sudo dnf install -y ${BUILDR_APP_LIBVIPS_BUILD_PACKAGES.join(" ")}`,
     `curl -fsSL -o ${BUILDR_APP_POSTGIS_DOWNLOAD_PATH} ${BUILDR_APP_POSTGIS_DOWNLOAD_URL}`,
     `echo "${BUILDR_APP_POSTGIS_SHA256}  ${BUILDR_APP_POSTGIS_DOWNLOAD_PATH}" | sha256sum -c -`,
     `cd /tmp && tar -xzf ${BUILDR_APP_POSTGIS_DOWNLOAD_PATH}`,
     `cd ${BUILDR_APP_POSTGIS_SOURCE_DIRECTORY} && ./configure --with-pgconfig=/usr/bin/pg_config --without-raster --without-topology --with-gettext=no && make -j2 && sudo make install`,
     `rm -rf ${BUILDR_APP_POSTGIS_SOURCE_DIRECTORY} ${BUILDR_APP_POSTGIS_DOWNLOAD_PATH}`,
+    `curl -fsSL -o ${BUILDR_APP_LIBVIPS_DOWNLOAD_PATH} ${BUILDR_APP_LIBVIPS_DOWNLOAD_URL}`,
+    `echo "${BUILDR_APP_LIBVIPS_SHA256}  ${BUILDR_APP_LIBVIPS_DOWNLOAD_PATH}" | sha256sum -c -`,
+    `cd /tmp && tar -xJf ${BUILDR_APP_LIBVIPS_DOWNLOAD_PATH}`,
+    `cd ${BUILDR_APP_LIBVIPS_SOURCE_DIRECTORY} && meson setup build --prefix=/usr/local --libdir=lib -Dintrospection=disabled && meson compile -C build && sudo meson install -C build && sudo ldconfig`,
+    `rm -rf ${BUILDR_APP_LIBVIPS_SOURCE_DIRECTORY} ${BUILDR_APP_LIBVIPS_DOWNLOAD_PATH}`,
+    "vips --version",
     `curl -fsSL -o ${BUILDR_APP_EXIFTOOL_DOWNLOAD_PATH} ${BUILDR_APP_EXIFTOOL_DOWNLOAD_URL}`,
     `echo "${BUILDR_APP_EXIFTOOL_SHA256}  ${BUILDR_APP_EXIFTOOL_DOWNLOAD_PATH}" | sha256sum -c -`,
     `cd /tmp && tar -xzf ${BUILDR_APP_EXIFTOOL_DOWNLOAD_PATH} && cd Image-ExifTool-${BUILDR_APP_EXIFTOOL_VERSION} && perl Makefile.PL && make && sudo make install`,
@@ -280,8 +307,9 @@ export function buildBuildrAppSnapshotCommands(): string[] {
     `sudo -u postgres dropdb -h ${BUILDR_APP_POSTGRES_SOCKET_DIRECTORY} ${BUILDR_APP_POSTGIS_VERIFY_DATABASE}`,
     `sudo -u postgres pg_ctl -D ${BUILDR_APP_POSTGRES_DATA_DIRECTORY} stop -m fast`,
     `sudo rm -f ${BUILDR_APP_POSTGIS_VERIFY_LOG_PATH}`,
-    "sudo ln -sf /usr/bin/redis6-server /usr/local/bin/redis-server",
-    "sudo ln -sf /usr/bin/redis6-cli /usr/local/bin/redis-cli",
+    "sudo ln -sf /usr/bin/valkey-server /usr/local/bin/redis-server",
+    "sudo ln -sf /usr/bin/valkey-cli /usr/local/bin/redis-cli",
+    "redis-server --version",
     "curl https://mise.run | sh",
     `sudo ln -sf ${BUILDR_APP_RUNTIME_HOME}/.local/bin/mise /usr/local/bin/mise`,
     `sudo sh -c "printf '%s\\n' 'export PATH=${BUILDR_APP_RUNTIME_PATH}' > /etc/profile.d/mise-path.sh"`,
@@ -309,7 +337,7 @@ export function buildBuildrAppSnapshotCommands(): string[] {
     `sudo install -m 0755 ${BUILDR_APP_MEILISEARCH_DOWNLOAD_PATH} /usr/local/bin/meilisearch`,
     `rm -f ${BUILDR_APP_MEILISEARCH_DOWNLOAD_PATH}`,
     "meilisearch --version",
-    'for tool in go bdev meilisearch pg_config psql createdb dropdb pg_ctl redis-server exiftool soffice; do command -v "$tool" >/dev/null || exit 1; done',
+    'for tool in go bdev meilisearch vips pg_config psql createdb dropdb pg_ctl redis-server exiftool soffice; do command -v "$tool" >/dev/null || exit 1; done',
     `install -d ${BUILDR_APP_RUNTIME_HOME}/.bundle ${BUILDR_APP_RUNTIME_HOME}/.local/share/pnpm/store`,
     `cd ${BUILDR_APP_SNAPSHOT_CONTEXT_ROOT} && /usr/local/bin/bundle install --jobs 1 --retry 3`,
     `cd ${BUILDR_APP_SNAPSHOT_CONTEXT_ROOT} && /usr/local/bin/pnpm install --frozen-lockfile --store-dir ${BUILDR_APP_RUNTIME_HOME}/.local/share/pnpm/store`,

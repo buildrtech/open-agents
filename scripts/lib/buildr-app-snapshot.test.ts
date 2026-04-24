@@ -154,6 +154,15 @@ describe("buildBuildrAppSnapshotCommands", () => {
       commands.some((command) => command.includes("CREATE EXTENSION postgis;")),
     ).toBe(true);
     expect(
+      commands.some((command) => command.includes("vips-8.17.3.tar.xz")),
+    ).toBe(true);
+    expect(
+      commands.some((command) => command.includes("meson setup build")),
+    ).toBe(true);
+    expect(commands.some((command) => command.includes("vips --version"))).toBe(
+      true,
+    );
+    expect(
       commands.some((command) =>
         command.includes(
           "sudo install -d -o postgres -g postgres /var/lib/pgsql/data",
@@ -167,7 +176,17 @@ describe("buildBuildrAppSnapshotCommands", () => {
         ),
       ),
     ).toBe(true);
-    expect(commands.some((command) => command.includes("redis6"))).toBe(true);
+    expect(commands.some((command) => command.includes("valkey"))).toBe(true);
+    expect(
+      commands.some((command) =>
+        command.includes(
+          "sudo ln -sf /usr/bin/valkey-server /usr/local/bin/redis-server",
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      commands.some((command) => command.includes("redis-server --version")),
+    ).toBe(true);
     expect(
       commands.some((command) => command.includes("mise install ruby@4.0.2")),
     ).toBe(true);
@@ -217,14 +236,14 @@ describe("buildBuildrAppSnapshotCommands", () => {
     expect(
       commands.some((command) =>
         command.includes(
-          "https://github.com/meilisearch/meilisearch/releases/download/v1.16.0/meilisearch-linux-amd64",
+          "https://github.com/meilisearch/meilisearch/releases/download/v1.12.0/meilisearch-linux-amd64",
         ),
       ),
     ).toBe(true);
     expect(
       commands.some((command) =>
         command.includes(
-          "9f2f892ef999d8bcabfa87517c22c53c8f6e74a034fa9678f868b0d3f45fedcc",
+          "865a3fc222e3b3bd1f4b64346cb114b9669af691aae28d71fa68dbf39427abcf",
         ),
       ),
     ).toBe(true);
@@ -258,7 +277,7 @@ describe("buildBuildrAppSnapshotCommands", () => {
     expect(
       commands.some((command) =>
         command.includes(
-          'for tool in go bdev meilisearch pg_config psql createdb dropdb pg_ctl redis-server exiftool soffice; do command -v "$tool" >/dev/null || exit 1',
+          'for tool in go bdev meilisearch vips pg_config psql createdb dropdb pg_ctl redis-server exiftool soffice; do command -v "$tool" >/dev/null || exit 1',
         ),
       ),
     ).toBe(true);
