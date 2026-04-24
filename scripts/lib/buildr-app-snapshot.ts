@@ -33,14 +33,18 @@ const BUILDR_APP_SYSTEM_PACKAGES = [
   "jq",
   "libheif",
   "libheif-devel",
+  "perl",
   "qpdf",
 ] as const;
 
 const BUILDR_APP_SERVICE_PACKAGES = [
   "postgresql17",
+  "postgresql17-contrib",
   "postgresql17-server",
   "redis6",
 ] as const;
+
+const BUILDR_APP_SPAL_PACKAGES = ["postgresql17-postgis"] as const;
 
 const BUILDR_APP_RUNTIME_HOME = "/home/vercel-sandbox";
 const BUILDR_APP_RUNTIME_PATH =
@@ -48,13 +52,29 @@ const BUILDR_APP_RUNTIME_PATH =
 const BUILDR_APP_MISE_INSTALLS_DIRECTORY =
   "/home/vercel-sandbox/.local/share/mise/installs";
 const BUILDR_APP_POSTGRES_DATA_DIRECTORY = "/var/lib/pgsql/data";
+const BUILDR_APP_POSTGRES_SOCKET_DIRECTORY = "/tmp";
 const BUILDR_APP_RUBY_VERSION = "4.0.2";
 const BUILDR_APP_NODE_VERSION = "24.14.0";
+const BUILDR_APP_GO_VERSION = "1.25.0";
 const BUILDR_APP_PYTHON_VERSION = "3.13.3";
 const BUILDR_APP_AST_GREP_VERSION = "0.40.5";
 const BUILDR_APP_PNPM_VERSION = "10.28.2";
+const BUILDR_APP_EXIFTOOL_VERSION = "13.57";
+const BUILDR_APP_EXIFTOOL_ARCHIVE_NAME = `Image-ExifTool-${BUILDR_APP_EXIFTOOL_VERSION}.tar.gz`;
+const BUILDR_APP_EXIFTOOL_DOWNLOAD_PATH = `/tmp/${BUILDR_APP_EXIFTOOL_ARCHIVE_NAME}`;
+const BUILDR_APP_EXIFTOOL_SOURCE_DIRECTORY = `/tmp/Image-ExifTool-${BUILDR_APP_EXIFTOOL_VERSION}`;
+const BUILDR_APP_EXIFTOOL_DOWNLOAD_URL = `https://sourceforge.net/projects/exiftool/files/${BUILDR_APP_EXIFTOOL_ARCHIVE_NAME}/download`;
+const BUILDR_APP_EXIFTOOL_SHA256 =
+  "58f74f5cf84350693a00c4df236fd4810e5abaf25fab2d15eaa9dcc4872d4481";
+const BUILDR_APP_LIBREOFFICE_VERSION = "26.2.2";
+const BUILDR_APP_LIBREOFFICE_ARCHIVE_NAME = `LibreOffice_${BUILDR_APP_LIBREOFFICE_VERSION}_Linux_x86-64_rpm.tar.gz`;
+const BUILDR_APP_LIBREOFFICE_DOWNLOAD_PATH = `/tmp/${BUILDR_APP_LIBREOFFICE_ARCHIVE_NAME}`;
+const BUILDR_APP_LIBREOFFICE_DOWNLOAD_URL = `https://download.documentfoundation.org/libreoffice/stable/${BUILDR_APP_LIBREOFFICE_VERSION}/rpm/x86_64/${BUILDR_APP_LIBREOFFICE_ARCHIVE_NAME}`;
+const BUILDR_APP_LIBREOFFICE_SHA256 =
+  "c510b6a83e14125fb079cd2fb5510eaf01464bd4956443a73a5f5fff23cfb911";
 const BUILDR_APP_RUBY_BIN_DIRECTORY = `${BUILDR_APP_MISE_INSTALLS_DIRECTORY}/ruby/${BUILDR_APP_RUBY_VERSION}/bin`;
 const BUILDR_APP_NODE_BIN_DIRECTORY = `${BUILDR_APP_MISE_INSTALLS_DIRECTORY}/node/${BUILDR_APP_NODE_VERSION}/bin`;
+const BUILDR_APP_GO_BIN_DIRECTORY = `${BUILDR_APP_MISE_INSTALLS_DIRECTORY}/go/${BUILDR_APP_GO_VERSION}/bin`;
 const BUILDR_APP_PYTHON_BIN_DIRECTORY = `${BUILDR_APP_MISE_INSTALLS_DIRECTORY}/python/${BUILDR_APP_PYTHON_VERSION}/bin`;
 
 export interface CollectBuildrAppSnapshotInputsOptions {
@@ -165,10 +185,23 @@ export function buildBuildrAppSnapshotCommands(): string[] {
     `sudo dnf install -y ${BUILDR_APP_BUILD_PACKAGES.join(" ")}`,
     `sudo dnf install -y ${BUILDR_APP_SYSTEM_PACKAGES.join(" ")}`,
     `sudo dnf install -y ${BUILDR_APP_SERVICE_PACKAGES.join(" ")}`,
+    "sudo dnf install -y spal-release",
+    `sudo dnf install -y ${BUILDR_APP_SPAL_PACKAGES.join(" ")}`,
+    `curl -fsSL -o ${BUILDR_APP_EXIFTOOL_DOWNLOAD_PATH} ${BUILDR_APP_EXIFTOOL_DOWNLOAD_URL}`,
+    `echo "${BUILDR_APP_EXIFTOOL_SHA256}  ${BUILDR_APP_EXIFTOOL_DOWNLOAD_PATH}" | sha256sum -c -`,
+    `cd /tmp && tar -xzf ${BUILDR_APP_EXIFTOOL_DOWNLOAD_PATH} && cd Image-ExifTool-${BUILDR_APP_EXIFTOOL_VERSION} && perl Makefile.PL && make && sudo make install`,
+    `rm -rf ${BUILDR_APP_EXIFTOOL_SOURCE_DIRECTORY} ${BUILDR_APP_EXIFTOOL_DOWNLOAD_PATH}`,
+    `curl -fsSL -o ${BUILDR_APP_LIBREOFFICE_DOWNLOAD_PATH} ${BUILDR_APP_LIBREOFFICE_DOWNLOAD_URL}`,
+    `echo "${BUILDR_APP_LIBREOFFICE_SHA256}  ${BUILDR_APP_LIBREOFFICE_DOWNLOAD_PATH}" | sha256sum -c -`,
+    `cd /tmp && tar -xzf ${BUILDR_APP_LIBREOFFICE_DOWNLOAD_PATH}`,
+    "sudo dnf install -y /tmp/LibreOffice_*_Linux_x86-64_rpm/RPMS/*.rpm",
+    "sudo ln -sf /opt/libreoffice*/program/soffice /usr/local/bin/soffice",
+    `rm -rf /tmp/LibreOffice_*_Linux_x86-64_rpm ${BUILDR_APP_LIBREOFFICE_DOWNLOAD_PATH}`,
     "sudo dnf clean all",
     `sudo install -d -o postgres -g postgres ${BUILDR_APP_POSTGRES_DATA_DIRECTORY}`,
     `test -f ${BUILDR_APP_POSTGRES_DATA_DIRECTORY}/PG_VERSION || (sudo rm -rf ${BUILDR_APP_POSTGRES_DATA_DIRECTORY} && sudo install -d -o postgres -g postgres ${BUILDR_APP_POSTGRES_DATA_DIRECTORY} && sudo -u postgres initdb -D ${BUILDR_APP_POSTGRES_DATA_DIRECTORY})`,
     `sudo sed -i "s/^#listen_addresses = .*/listen_addresses = '127.0.0.1'/" ${BUILDR_APP_POSTGRES_DATA_DIRECTORY}/postgresql.conf`,
+    `sudo sed -i "s|^#unix_socket_directories = .*|unix_socket_directories = '${BUILDR_APP_POSTGRES_SOCKET_DIRECTORY}'|" ${BUILDR_APP_POSTGRES_DATA_DIRECTORY}/postgresql.conf`,
     `sudo sed -i 's/^local\\s\\+all\\s\\+all\\s\\+peer$/local all all trust/' ${BUILDR_APP_POSTGRES_DATA_DIRECTORY}/pg_hba.conf`,
     `sudo sed -i 's/^host\\s\\+all\\s\\+all\\s\\+127\\.0\\.0\\.1\\/32\\s\\+scram-sha-256$/host all all 127.0.0.1\\/32 trust/' ${BUILDR_APP_POSTGRES_DATA_DIRECTORY}/pg_hba.conf`,
     `sudo sed -i 's/^host\\s\\+all\\s\\+all\\s\\+::1\\/128\\s\\+scram-sha-256$/host all all ::1\\/128 trust/' ${BUILDR_APP_POSTGRES_DATA_DIRECTORY}/pg_hba.conf`,
@@ -181,10 +214,13 @@ export function buildBuildrAppSnapshotCommands(): string[] {
     `sudo ln -sf ${BUILDR_APP_RUBY_BIN_DIRECTORY}/ruby /usr/local/bin/ruby && sudo ln -sf ${BUILDR_APP_RUBY_BIN_DIRECTORY}/bundle /usr/local/bin/bundle && sudo ln -sf ${BUILDR_APP_RUBY_BIN_DIRECTORY}/gem /usr/local/bin/gem`,
     `export PATH="${BUILDR_APP_RUNTIME_PATH}" && mise install node@${BUILDR_APP_NODE_VERSION}`,
     `sudo ln -sf ${BUILDR_APP_NODE_BIN_DIRECTORY}/node /usr/local/bin/node && sudo ln -sf ${BUILDR_APP_NODE_BIN_DIRECTORY}/npm /usr/local/bin/npm && sudo ln -sf ${BUILDR_APP_NODE_BIN_DIRECTORY}/npx /usr/local/bin/npx && sudo ln -sf ${BUILDR_APP_NODE_BIN_DIRECTORY}/corepack /usr/local/bin/corepack`,
+    `export PATH="${BUILDR_APP_RUNTIME_PATH}" && mise install go@${BUILDR_APP_GO_VERSION}`,
+    `sudo ln -sf ${BUILDR_APP_GO_BIN_DIRECTORY}/go /usr/local/bin/go`,
     `export PATH="${BUILDR_APP_RUNTIME_PATH}" && mise install python@${BUILDR_APP_PYTHON_VERSION}`,
     `sudo ln -sf ${BUILDR_APP_PYTHON_BIN_DIRECTORY}/python3 /usr/local/bin/python3 && sudo ln -sf ${BUILDR_APP_PYTHON_BIN_DIRECTORY}/python3 /usr/local/bin/python`,
-    `export PATH="${BUILDR_APP_RUNTIME_PATH}" && mise use -g ruby@${BUILDR_APP_RUBY_VERSION} node@${BUILDR_APP_NODE_VERSION} python@${BUILDR_APP_PYTHON_VERSION}`,
+    `export PATH="${BUILDR_APP_RUNTIME_PATH}" && mise use -g ruby@${BUILDR_APP_RUBY_VERSION} node@${BUILDR_APP_NODE_VERSION} go@${BUILDR_APP_GO_VERSION} python@${BUILDR_APP_PYTHON_VERSION}`,
     `npm install -g pnpm@${BUILDR_APP_PNPM_VERSION} @ast-grep/cli@${BUILDR_APP_AST_GREP_VERSION} && sudo ln -sf "$(command -v pnpm)" /usr/local/bin/pnpm && sudo ln -sf "$(command -v ast-grep)" /usr/local/bin/ast-grep`,
+    'for tool in go psql createdb dropdb pg_ctl redis-server exiftool soffice; do command -v "$tool" >/dev/null || exit 1; done',
     `install -d ${BUILDR_APP_RUNTIME_HOME}/.bundle ${BUILDR_APP_RUNTIME_HOME}/.local/share/pnpm/store`,
     `cd ${BUILDR_APP_SNAPSHOT_CONTEXT_ROOT} && /usr/local/bin/bundle install --jobs 1 --retry 3`,
     `cd ${BUILDR_APP_SNAPSHOT_CONTEXT_ROOT} && /usr/local/bin/pnpm install --frozen-lockfile --store-dir ${BUILDR_APP_RUNTIME_HOME}/.local/share/pnpm/store`,

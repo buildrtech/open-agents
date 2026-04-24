@@ -76,7 +76,7 @@ describe("collectBuildrAppSnapshotInputs", () => {
 });
 
 describe("buildBuildrAppSnapshotCommands", () => {
-  test("builds commands that install runtime-compatible system deps, services, toolchains, and warm caches", () => {
+  test("builds commands that install the buildr qa runtime contract", () => {
     const commands = buildBuildrAppSnapshotCommands();
 
     expect(
@@ -90,6 +90,15 @@ describe("buildBuildrAppSnapshotCommands", () => {
     expect(commands.some((command) => command.includes("postgresql17"))).toBe(
       true,
     );
+    expect(
+      commands.some((command) => command.includes("postgresql17-contrib")),
+    ).toBe(true);
+    expect(commands.some((command) => command.includes("spal-release"))).toBe(
+      true,
+    );
+    expect(
+      commands.some((command) => command.includes("postgresql17-postgis")),
+    ).toBe(true);
     expect(
       commands.some((command) =>
         command.includes(
@@ -112,8 +121,25 @@ describe("buildBuildrAppSnapshotCommands", () => {
       commands.some((command) => command.includes("mise install node@24.14.0")),
     ).toBe(true);
     expect(
+      commands.some((command) => command.includes("mise install go@1.25.0")),
+    ).toBe(true);
+    expect(
       commands.some((command) =>
         command.includes("mise install python@3.13.3"),
+      ),
+    ).toBe(true);
+    expect(
+      commands.some((command) => command.includes("/usr/local/bin/go")),
+    ).toBe(true);
+    expect(
+      commands.some((command) =>
+        command.includes("unix_socket_directories = '/tmp'"),
+      ),
+    ).toBe(true);
+    expect(commands.some((command) => command.includes("exiftool"))).toBe(true);
+    expect(
+      commands.some((command) =>
+        command.includes("LibreOffice_26.2.2_Linux_x86-64_rpm.tar.gz"),
       ),
     ).toBe(true);
     expect(
@@ -121,6 +147,13 @@ describe("buildBuildrAppSnapshotCommands", () => {
     ).toBe(true);
     expect(
       commands.some((command) => command.includes("/usr/local/bin/pnpm")),
+    ).toBe(true);
+    expect(
+      commands.some((command) =>
+        command.includes(
+          'for tool in go psql createdb dropdb pg_ctl redis-server exiftool soffice; do command -v "$tool" >/dev/null || exit 1',
+        ),
+      ),
     ).toBe(true);
     expect(commands.some((command) => command.includes("apt-get"))).toBe(false);
     expect(commands.some((command) => command.includes("bundle install"))).toBe(
