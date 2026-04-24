@@ -8,7 +8,7 @@ let currentSession: {
 };
 
 const preferencesState = {
-  defaultModelId: "openai/gpt-5.4",
+  defaultModelId: "openai/gpt-5.5",
   defaultSubagentModelId: null as string | null,
   defaultSandboxType: "vercel" as const,
   defaultDiffMode: "unified" as const,
@@ -54,7 +54,7 @@ function createJsonRequest(method: "PATCH" | "GET", body?: unknown): Request {
 describe("/api/settings/preferences", () => {
   beforeEach(() => {
     currentSession = { user: { id: "user-1" } };
-    preferencesState.defaultModelId = "openai/gpt-5.4";
+    preferencesState.defaultModelId = "openai/gpt-5.5";
     preferencesState.defaultSubagentModelId = null;
     preferencesState.modelVariants = [];
     updateCalls.length = 0;
@@ -112,7 +112,7 @@ describe("/api/settings/preferences", () => {
       preferences: typeof preferencesState;
     };
 
-    expect(body.preferences.defaultModelId).toBe("openai/gpt-5.4");
+    expect(body.preferences.defaultModelId).toBe("openai/gpt-5.5");
     expect(body.preferences.defaultSubagentModelId).toBeNull();
     expect(body.preferences.modelVariants).toEqual([]);
   });
@@ -121,7 +121,7 @@ describe("/api/settings/preferences", () => {
     const { PATCH } = await routeModulePromise;
 
     const response = await PATCH(
-      createJsonRequest("PATCH", { enabledModelIds: ["openai/gpt-5.4"] }),
+      createJsonRequest("PATCH", { enabledModelIds: ["openai/gpt-5.5"] }),
     );
     const body = (await response.json()) as { error: string };
 

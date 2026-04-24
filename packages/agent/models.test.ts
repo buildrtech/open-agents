@@ -27,7 +27,7 @@ const {
 describe("shouldApplyOpenAIReasoningDefaults", () => {
   test("returns true for existing GPT-5 variants", () => {
     expect(shouldApplyOpenAIReasoningDefaults("openai/gpt-5.3")).toBe(true);
-    expect(shouldApplyOpenAIReasoningDefaults("openai/gpt-5.4")).toBe(true);
+    expect(shouldApplyOpenAIReasoningDefaults("openai/gpt-5.5")).toBe(true);
   });
 
   test("returns true for future GPT-5 variants", () => {
@@ -92,8 +92,8 @@ describe("getProviderOptionsForModel", () => {
     });
   });
 
-  test("applies low text verbosity defaults to GPT-5.4 snapshots", () => {
-    const result = getProviderOptionsForModel("openai/gpt-5.4-2026-03-05");
+  test("applies low text verbosity defaults to GPT-5.5 snapshots", () => {
+    const result = getProviderOptionsForModel("openai/gpt-5.5-2026-03-05");
 
     expect(result).toEqual({
       openai: {
@@ -105,8 +105,8 @@ describe("getProviderOptionsForModel", () => {
     });
   });
 
-  test("preserves store false and encrypted reasoning content for the built-in GPT-5.4 variant", () => {
-    const result = getProviderOptionsForModel("openai/gpt-5.4", {
+  test("preserves store false and encrypted reasoning content for the built-in GPT-5.5 variant", () => {
+    const result = getProviderOptionsForModel("openai/gpt-5.5", {
       openai: {
         reasoningEffort: "xhigh",
         reasoningSummary: "auto",

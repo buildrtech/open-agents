@@ -283,7 +283,7 @@ export function getProviderFromModelId(modelId: string): string {
 
 /**
  * Strip the provider brand prefix from a model label for compact display.
- * e.g. "Claude Opus 4.6" → "Opus 4.6", "GPT-5.4" → "GPT-5.4"
+ * e.g. "Claude Opus 4.6" → "Opus 4.6", "GPT-5.5" → "GPT-5.5"
  */
 export function stripProviderPrefix(label: string, provider: string): string {
   const prefixes = providerLabelPrefixes[provider];

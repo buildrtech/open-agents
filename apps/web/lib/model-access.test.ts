@@ -36,7 +36,7 @@ const userOpusVariant: ModelVariant = {
 
 const basePreferences: UserPreferencesData = {
   defaultModelId: "moonshotai/kimi-k2.6",
-  defaultSubagentModelId: "openai/gpt-5.4",
+  defaultSubagentModelId: "openai/gpt-5.5",
   defaultSandboxType: "vercel",
   defaultDiffMode: "unified",
   autoCommitPush: false,
@@ -52,7 +52,7 @@ describe("model access gating", () => {
   test("filters base models to the company allowlist", () => {
     const result = filterModelsForSession(
       [
-        { id: "openai/gpt-5.4" },
+        { id: "openai/gpt-5.5" },
         { id: "moonshotai/kimi-k2.6" },
         { id: "anthropic/claude-opus-4.6" },
       ],
@@ -61,7 +61,7 @@ describe("model access gating", () => {
     );
 
     expect(result).toEqual([
-      { id: "openai/gpt-5.4" },
+      { id: "openai/gpt-5.5" },
       { id: "moonshotai/kimi-k2.6" },
     ]);
   });
@@ -84,7 +84,7 @@ describe("model access gating", () => {
       requestUrl,
     );
 
-    expect(result).toBe("openai/gpt-5.4");
+    expect(result).toBe("openai/gpt-5.5");
   });
 
   test("sanitizes preferences by removing disallowed selections", () => {
@@ -100,7 +100,7 @@ describe("model access gating", () => {
     );
 
     expect(result).toMatchObject({
-      defaultModelId: "openai/gpt-5.4",
+      defaultModelId: "openai/gpt-5.5",
       defaultSubagentModelId: null,
       modelVariants: [userKimiVariant],
     });

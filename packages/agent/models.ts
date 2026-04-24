@@ -105,7 +105,7 @@ export function shouldApplyOpenAIReasoningDefaults(modelId: string): boolean {
 }
 
 function shouldApplyOpenAITextVerbosityDefaults(modelId: string): boolean {
-  return modelId.startsWith("openai/gpt-5.4");
+  return modelId.startsWith("openai/gpt-5.5");
 }
 
 export function getProviderOptionsForModel(

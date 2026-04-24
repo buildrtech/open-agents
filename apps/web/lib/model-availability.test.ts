@@ -15,11 +15,11 @@ import {
 describe("model availability", () => {
   test("allows only the company-approved model ids", () => {
     expect(Array.from(ALLOWED_MODEL_IDS)).toEqual([
-      "openai/gpt-5.4",
+      "openai/gpt-5.5",
       "moonshotai/kimi-k2.6",
     ]);
 
-    expect(isModelAllowed("openai/gpt-5.4")).toBe(true);
+    expect(isModelAllowed("openai/gpt-5.5")).toBe(true);
     expect(isModelAllowed("moonshotai/kimi-k2.6")).toBe(true);
     expect(isModelAllowed("openai/gpt-5")).toBe(false);
     expect(isModelAllowed("anthropic/claude-sonnet-4.6")).toBe(false);
@@ -47,11 +47,11 @@ describe("model availability", () => {
 
     expect(
       filterAllowedModels([
-        { id: "openai/gpt-5.4" },
+        { id: "openai/gpt-5.5" },
         { id: "moonshotai/kimi-k2.6" },
         { id: "anthropic/claude-sonnet-4.6" },
       ]),
-    ).toEqual([{ id: "openai/gpt-5.4" }, { id: "moonshotai/kimi-k2.6" }]);
+    ).toEqual([{ id: "openai/gpt-5.5" }, { id: "moonshotai/kimi-k2.6" }]);
 
     expect(filterAllowedModelVariants(variants)).toEqual([
       {
@@ -64,7 +64,7 @@ describe("model availability", () => {
   });
 
   test("returns required provider routing overrides for allowed models", () => {
-    expect(getRequiredProviderOptionsForModel("openai/gpt-5.4")).toEqual({
+    expect(getRequiredProviderOptionsForModel("openai/gpt-5.5")).toEqual({
       gateway: {
         only: ["openai"],
         order: ["openai"],
@@ -84,7 +84,7 @@ describe("model availability", () => {
   });
 
   test("falls back to the repo default for disallowed model ids", () => {
-    expect(resolveAvailableModelId("openai/gpt-5.4")).toBe("openai/gpt-5.4");
+    expect(resolveAvailableModelId("openai/gpt-5.5")).toBe("openai/gpt-5.5");
     expect(resolveAvailableModelId("moonshotai/kimi-k2.6")).toBe(
       "moonshotai/kimi-k2.6",
     );

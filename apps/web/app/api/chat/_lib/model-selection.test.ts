@@ -7,12 +7,12 @@ describe("resolveChatModelSelection", () => {
   test("applies required gateway routing for direct allowlisted model ids", () => {
     expect(
       resolveChatModelSelection({
-        selectedModelId: "openai/gpt-5.4",
+        selectedModelId: "openai/gpt-5.5",
         modelVariants: [],
         missingVariantLabel: "Selected model variant",
       }),
     ).toEqual({
-      id: "openai/gpt-5.4",
+      id: "openai/gpt-5.5",
       providerOptionsOverrides: {
         gateway: {
           only: ["openai"],
@@ -43,7 +43,7 @@ describe("resolveChatModelSelection", () => {
       {
         id: "variant:openai-medium",
         name: "OpenAI Medium",
-        baseModelId: "openai/gpt-5.4",
+        baseModelId: "openai/gpt-5.5",
         providerOptions: {
           reasoningEffort: "medium",
         },
@@ -57,7 +57,7 @@ describe("resolveChatModelSelection", () => {
     });
 
     expect(selection).toEqual({
-      id: "openai/gpt-5.4",
+      id: "openai/gpt-5.5",
       providerOptionsOverrides: {
         gateway: {
           only: ["openai"],
@@ -73,13 +73,13 @@ describe("resolveChatModelSelection", () => {
 
   test("resolves built-in OpenAI variants with store false", () => {
     const selection = resolveChatModelSelection({
-      selectedModelId: "variant:builtin:gpt-5.4-xhigh",
+      selectedModelId: "variant:builtin:gpt-5.5-xhigh",
       modelVariants: BUILT_IN_VARIANTS,
       missingVariantLabel: "Selected model variant",
     });
 
     expect(selection).toEqual({
-      id: "openai/gpt-5.4",
+      id: "openai/gpt-5.5",
       providerOptionsOverrides: {
         gateway: {
           only: ["openai"],

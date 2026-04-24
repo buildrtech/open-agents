@@ -283,8 +283,8 @@ You MUST keep working until the problem is completely solved. Do not end your tu
 
 Follow existing code conventions strictly. Never assume a library is available -- verify its usage in the project before employing it.`;
 
-const GPT_5_4_OVERLAY = `
-# GPT-5.4 style
+const GPT_5_5_OVERLAY = `
+# GPT-5.5 style
 - Be concise and direct.
 - No preamble, recap, filler, or pleasantries.
 - Do not restate the request or narrate routine steps.
@@ -308,9 +308,9 @@ function getModelOverlay(family: ModelFamily, modelId?: string): string {
       break;
   }
 
-  // Append GPT-5.4-specific conciseness instructions
-  if (modelId?.startsWith("openai/gpt-5.4")) {
-    overlay += GPT_5_4_OVERLAY;
+  // Append GPT-5.5-specific conciseness instructions
+  if (modelId?.startsWith("openai/gpt-5.5")) {
+    overlay += GPT_5_5_OVERLAY;
   }
 
   return overlay;

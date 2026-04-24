@@ -11,7 +11,7 @@ describe("toUserPreferencesData", () => {
     const { toUserPreferencesData } = await userPreferencesModulePromise;
 
     expect(toUserPreferencesData()).toEqual({
-      defaultModelId: "openai/gpt-5.4",
+      defaultModelId: "openai/gpt-5.5",
       defaultSubagentModelId: null,
       defaultSandboxType: "vercel",
       defaultDiffMode: "unified",

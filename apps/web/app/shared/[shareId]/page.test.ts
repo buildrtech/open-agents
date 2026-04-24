@@ -193,7 +193,7 @@ describe("/shared/[shareId] page", () => {
       {
         id: "variant:abc123",
         name: "Gateway Usage Variant",
-        baseModelId: "openai/gpt-5.4",
+        baseModelId: "openai/gpt-5.5",
         providerOptions: {
           reasoningEffort: "high",
         },

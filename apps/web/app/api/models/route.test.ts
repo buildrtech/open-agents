@@ -76,7 +76,7 @@ describe("/api/models context window enrichment", () => {
   test("overrides gateway context windows from models.dev", async () => {
     gatewayModels.push(
       {
-        id: "openai/gpt-5.4",
+        id: "openai/gpt-5.5",
         modelType: "language",
         context_window: 200_000,
       },
@@ -100,7 +100,7 @@ describe("/api/models context window enrichment", () => {
     modelsDevApiData = {
       openai: {
         models: {
-          "gpt-5.4": {
+          "gpt-5.5": {
             limit: { context: 400_000 },
           },
         },
@@ -126,7 +126,7 @@ describe("/api/models context window enrichment", () => {
       body.models.map((model) => [model.id, model.context_window]),
     );
 
-    expect(contextById.get("openai/gpt-5.4")).toBe(400_000);
+    expect(contextById.get("openai/gpt-5.5")).toBe(400_000);
     expect(contextById.get("moonshotai/kimi-k2.6")).toBe(262_144);
     expect(contextById.has("openai/gpt-5.3-codex")).toBe(false);
     expect(contextById.has("openai/image-gen")).toBe(false);
@@ -136,7 +136,7 @@ describe("/api/models context window enrichment", () => {
   test("returns only allowlisted models for managed trial users", async () => {
     gatewayModels.push(
       {
-        id: "openai/gpt-5.4",
+        id: "openai/gpt-5.5",
         modelType: "language",
       },
       {
@@ -162,7 +162,7 @@ describe("/api/models context window enrichment", () => {
     };
 
     expect(body.models.map((model) => model.id)).toEqual([
-      "openai/gpt-5.4",
+      "openai/gpt-5.5",
       "moonshotai/kimi-k2.6",
     ]);
   });
@@ -202,7 +202,7 @@ describe("/api/models context window enrichment", () => {
 
   test("keeps valid models.dev metadata when sibling fields are invalid", async () => {
     gatewayModels.push({
-      id: "openai/gpt-5.4",
+      id: "openai/gpt-5.5",
       modelType: "language",
       context_window: 200_000,
     });
@@ -211,7 +211,7 @@ describe("/api/models context window enrichment", () => {
       invalidProvider: "bad",
       openai: {
         models: {
-          "gpt-5.4": {
+          "gpt-5.5": {
             limit: { context: "400_000" },
             cost: {
               input: 1.25,
@@ -250,7 +250,7 @@ describe("/api/models context window enrichment", () => {
 
     expect(body.models).toHaveLength(1);
     expect(body.models[0]).toMatchObject({
-      id: "openai/gpt-5.4",
+      id: "openai/gpt-5.5",
       context_window: 200_000,
       cost: {
         input: 1.25,
@@ -267,13 +267,13 @@ describe("/api/models context window enrichment", () => {
       response: {
         models: [
           {
-            id: "openai/gpt-5.4",
-            name: "GPT 5.4",
+            id: "openai/gpt-5.5",
+            name: "GPT 5.5",
             description: "Latest GPT model",
             modelType: "language",
           },
           {
-            id: "openai/gpt-5.4-broken",
+            id: "openai/gpt-5.5-broken",
             modelType: "language",
           },
           {
@@ -302,8 +302,8 @@ describe("/api/models context window enrichment", () => {
 
     expect(body.models).toEqual([
       {
-        id: "openai/gpt-5.4",
-        name: "GPT 5.4",
+        id: "openai/gpt-5.5",
+        name: "GPT 5.5",
         description: "Latest GPT model",
         modelType: "language",
       },

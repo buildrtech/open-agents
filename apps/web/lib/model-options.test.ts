@@ -173,9 +173,9 @@ describe("model options", () => {
   test("getDefaultModelOptionId prefers repository default model when present", () => {
     const options = [
       {
-        id: "openai/gpt-5.4",
-        label: "GPT-5.4",
-        shortLabel: "GPT-5.4",
+        id: "openai/gpt-5.5",
+        label: "GPT-5.5",
+        shortLabel: "GPT-5.5",
         isVariant: false,
         provider: "anthropic",
       },
@@ -188,7 +188,7 @@ describe("model options", () => {
       },
     ];
 
-    expect(getDefaultModelOptionId(options)).toBe("openai/gpt-5.4");
+    expect(getDefaultModelOptionId(options)).toBe("openai/gpt-5.5");
   });
 
   test("getDefaultModelOptionId falls back to first option when default is missing", () => {

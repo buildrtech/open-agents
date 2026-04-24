@@ -35,7 +35,7 @@ export function filterAllowedModelVariants<T extends { baseModelId: string }>(
 export function getRequiredProviderOptionsForModel(
   modelId: string,
 ): ProviderOptionsByProvider | undefined {
-  if (modelId === "openai/gpt-5.4") {
+  if (modelId === "openai/gpt-5.5") {
     return {
       gateway: {
         only: ["openai"],

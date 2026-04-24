@@ -372,7 +372,7 @@ describe("/api/chat route", () => {
       {
         id: "variant:test-model",
         name: "Test model",
-        baseModelId: "openai/gpt-5.4",
+        baseModelId: "openai/gpt-5.5",
         providerOptions: { reasoningEffort: "medium" },
       },
     ];
@@ -384,10 +384,10 @@ describe("/api/chat route", () => {
     expect(startCalls[0]?.[1]).toEqual([
       expect.objectContaining({
         selectedModelId: "variant:test-model",
-        modelId: "openai/gpt-5.4",
+        modelId: "openai/gpt-5.5",
         agentOptions: expect.objectContaining({
           model: {
-            id: "openai/gpt-5.4",
+            id: "openai/gpt-5.5",
             providerOptionsOverrides: {
               gateway: {
                 only: ["openai"],
