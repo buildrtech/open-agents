@@ -159,6 +159,17 @@ describe("buildBuildrAppSnapshotCommands", () => {
     expect(
       commands.some((command) => command.includes("meson setup build")),
     ).toBe(true);
+    expect(
+      commands.some((command) =>
+        command.includes("/etc/ld.so.conf.d/local-libvips.conf"),
+      ),
+    ).toBe(true);
+    expect(commands.some((command) => command.includes("xz"))).toBe(true);
+    expect(
+      commands.some((command) =>
+        command.includes("sudo ln -sf /usr/local/bin/vips /usr/bin/vips"),
+      ),
+    ).toBe(true);
     expect(commands.some((command) => command.includes("vips --version"))).toBe(
       true,
     );
@@ -180,7 +191,7 @@ describe("buildBuildrAppSnapshotCommands", () => {
     expect(
       commands.some((command) =>
         command.includes(
-          "sudo ln -sf /usr/bin/valkey-server /usr/local/bin/redis-server",
+          "sudo ln -sf /usr/bin/valkey-server /usr/bin/redis-server",
         ),
       ),
     ).toBe(true);
@@ -230,7 +241,7 @@ describe("buildBuildrAppSnapshotCommands", () => {
     ).toBe(true);
     expect(
       commands.some((command) =>
-        command.includes("sudo install -m 0755 /tmp/bdev /usr/local/bin/bdev"),
+        command.includes("sudo install -m 0755 /tmp/bdev /usr/bin/bdev"),
       ),
     ).toBe(true);
     expect(
@@ -250,7 +261,7 @@ describe("buildBuildrAppSnapshotCommands", () => {
     expect(
       commands.some((command) =>
         command.includes(
-          "sudo install -m 0755 /tmp/meilisearch-linux-amd64 /usr/local/bin/meilisearch",
+          "sudo install -m 0755 /tmp/meilisearch-linux-amd64 /usr/bin/meilisearch",
         ),
       ),
     ).toBe(true);

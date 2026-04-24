@@ -19,7 +19,7 @@ import {
 import { parseRefreshBaseSnapshotArgs } from "./lib/refresh-base-snapshot-cli";
 
 const SANDBOX_BASE_SNAPSHOT_CONFIG_PATH = "apps/web/lib/sandbox/config.ts";
-const BUILDR_APP_ROOT = path.resolve(import.meta.dir, "../../app");
+const BUILDR_APP_ROOT = path.resolve(import.meta.dir, "../../app2");
 const FORGE_HARNESS_SKILLS_ROOT = path.resolve(
   import.meta.dir,
   "../../forge/harness/skills",

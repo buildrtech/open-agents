@@ -50,4 +50,4 @@ export const DEFAULT_SANDBOX_BASE_SNAPSHOT_ID =
   // Previous snapshot (Buildr app bootstrap base + Forge harness skills):
   // "snap_ouE2VaH0c3sCiq6I89AHucBxG3U1"
   // Current snapshot (Buildr app QA sandbox base + Forge harness skills):
-  "snap_sHSDEsz6G8L5q3NxLEccHJx0TcWL";
+  "snap_wLJsPEkYjcg77m5JiYufvmTxgF8n";
